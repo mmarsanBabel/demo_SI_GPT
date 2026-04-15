@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Candidato - IGC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --navy: #1a3a5a;
+            --accent: #2c7be5;
+            --bg: #f4f7f9;
+            --gold-bg: #fff9db;
+            --gold-border: #f08c00;
+            --text-main: #2d3748;
+        }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 25px; 
+            color: var(--text-main);
+            font-size: 16px; 
+        }
+        .container { max-width: 1500px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        header { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--navy); margin-bottom: 30px; padding-bottom: 15px; }
+        h1 { font-size: 28px; color: var(--navy); margin: 0; }
+        
+        .btn-volver {
+            background: var(--navy); color: white; border: none; padding: 10px 20px;
+            border-radius: 6px; cursor: pointer; font-weight: bold; text-decoration: none;
+        }
+
+        .audit-section { display: block; animation: fadeIn 0.4s; }
+        .audit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; background: #fff; }
+        
+        .vector-table { font-size: 14px; width: 100%; margin: 20px 0; border-collapse: collapse; }
+        .vector-table th { background: #f1f5f9; color: var(--navy); border: 1px solid #cbd5e1; padding: 10px; }
+        .vector-table td { border: 1px solid #cbd5e1; padding: 12px; font-weight: bold; text-align: center; }
+
+        .result-highlight {
+            display: flex; align-items: center; justify-content: space-around;
+            background: linear-gradient(135deg, #1a3a5a 0%, #2c7be5 100%);
+            color: white; padding: 20px; border-radius: 10px; margin-top: 20px;
+        }
+        .result-value { font-size: 36px; font-weight: 800; }
+        .result-label { font-size: 14px; text-transform: uppercase; opacity: 0.9; }
+
+        .chart-container { position: relative; height: 450px; width: 100%; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body onload="init()">
+
+<div class="container">
+    <header>
+        <h1>Expediente Técnico de Idoneidad</h1>
+        <a href="IGC_Ranking.html" class="btn-volver">← Volver al Ranking</a>
+    </header>
+
+    <div class="audit-section">
+        <div class="audit-grid">
+            <div class="card">
+                <div style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                    <span style="font-size: 12px; font-weight: bold; color: var(--accent); text-transform: uppercase;">Detalle de Auditoría</span>
+                    <h2 id="audName" style="margin:5px 0; color:var(--navy); font-size: 26px;">---</h2>
+                    <p id="audMeta" style="color:#64748b; margin: 0; font-size: 16px; font-weight: 500;">---</p>
+                </div>
+                
+                <table class="vector-table">
+                    <thead>
+                        <tr>
+                            <th>CAE_n</th><th>IIT_n</th><th>FAN_n</th><th>Fproy_n</th><th>Fsin_n</th><th>IGCbase</th><th>Fesp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audVectors">
+                        </tbody>
+                </table>
+                
+                <div style="margin-top:15px; padding:15px; background:#fdfdfd; border-left: 5px solid var(--accent);">
+                    <strong>Análisis del Sistema:</strong>
+                    <p id="audDesc" style="font-size: 15px; margin: 8px 0 0 0; color: #4a5568;"></p>
+                </div>
+
+                <div class="result-highlight">
+                    <div class="result-item" style="text-align:center;">
+                        <span class="result-label">Resultado IGC</span>
+                        <span id="resIGC" class="result-value">--</span>
+                    </div>
+                    <div style="width: 2px; height: 50px; background: rgba(255,255,255,0.2);"></div>
+                    <div class="result-item" style="text-align:center;">
+                        <span class="result-label">Posición Ranking</span>
+                        <span id="resRank" class="result-value">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3 style="text-align:center; margin-top:0;">Perfil Individual vs Nivel Ideal</h3>
+                <div class="chart-container"> 
+                    <a id="linkIndividual" href="#" target="_blank" 
+                       style="display:block; width:100%; height:100%; position: absolute; top:0; left:0; z-index:100; cursor:pointer;"
+                       title="Clic para descargar informe PDF">
+                    </a>
+                    <canvas id="indRadar"></canvas>
+                </div>
+                <p style="text-align:center; font-size:0.85rem; color:#666; margin-top:10px;">* Haga clic en la gráfica para descargar el informe técnico detallado.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let indRadar;
+    const labels = ['CAE', 'IIT', 'FAN', 'Fproy', 'Fsin', 'Fesp'];
+
+    function init() {
+        // 1. Recuperar datos del localStorage
+        const c = JSON.parse(localStorage.getItem('candidatoSeleccionado'));
+        const posicion = localStorage.getItem('posicionRanking');
+
+        // 2. Seguridad: Si no hay datos, volver al dashboard
+        if (!c) {
+            window.location.href = 'IGC_Dashboard.html';
+            return;
+        }
+
+        // 3. Rellenar Textos
+        document.getElementById('audName').innerText = c.id;
+        document.getElementById('audMeta').innerText = `${c.empleo} | DNI: ${c.dni}`;
+        document.getElementById('resIGC').innerText = c.igc;
+        document.getElementById('resRank').innerText = `#${posicion}`;
+        document.getElementById('linkIndividual').href = `informe Tecnico IGC - ${c.id}.pdf`;
+
+        // 4. Rellenar Tabla de Vectores
+        document.getElementById('audVectors').innerHTML = `
+            <tr>
+                <td>${c.cae.toFixed(2)}</td><td>${c.iit.toFixed(2)}</td><td>${c.fan.toFixed(2)}</td>
+                <td>${c.fproy.toFixed(2)}</td><td>${c.fsin.toFixed(2)}</td><td>${c.base.toFixed(2)}</td><td>${c.fesp.toFixed(2)}</td>
+            </tr>`;
+        
+        // 5. Rellenar Descripción
+        document.getElementById('audDesc').innerText = c.igc > 85 
+            ? "Perfil con alto índice de concordancia. Los vectores técnicos y de sintonía muestran una alineación óptima con los objetivos estratégicos de la Armada."
+            : "Perfil por debajo del umbral de excelencia. Presenta brechas significativas en vectores clave que requieren capacitación adicional.";
+
+        // 6. Generar Radar
+        const ctxInd = document.getElementById('indRadar').getContext('2d');
+        indRadar = new Chart(ctxInd, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { 
+                        label: 'Candidato', 
+                        data: [c.cae, c.iit, c.fan, c.fproy, c.fsin, c.fesp], 
+                        borderColor: '#e63946', 
+                        backgroundColor: 'rgba(230, 57, 70, 0.2)', 
+                        borderWidth: 4 
+                    },
+                    { 
+                        label: 'Ideal', 
+                        data: [1, 1, 1, 1, 1, 1], 
+                        borderColor: '#2d6a4f', 
+                        borderDash: [5, 5], 
+                        fill: false 
+                    }
+                ]
+            },
+            options: { 
+                maintainAspectRatio: false, 
+                plugins: { legend: { position: 'bottom' } },
+                scales: { 
+                    r: { min: 0, max: 1.2, ticks: { display: false } } 
+                } 
+            }
+        });
+    }
+</script>
+</body>
+</html>

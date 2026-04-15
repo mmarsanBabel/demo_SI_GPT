@@ -1,0 +1,1068 @@
+Perfecto. Te dejo un **script SQL único para MySQL 8** que, dado un puesto objetivo, te genera de una vez:
+
+* el **ranking de transiciones de empleos**
+* el **ranking de transiciones de destinos**
+* el **Mermaid de empleos**
+* el **Mermaid de destinos**
+* el **resumen de competencias del puesto objetivo**
+* el **resumen de áreas de experiencia del puesto objetivo**
+
+Además lo he preparado para que puedas usarlo con:
+
+```text id="lystf0"
+Ver itinerario real hacia este puesto
+```
+
+cambiando solo una variable.
+
+---
+
+# Script SQL único
+
+```sql id="wf2ytk"
+-- ============================================================
+-- ITINERARIO REAL HACIA UN PUESTO OBJETIVO
+-- MySQL 8+
+-- Genera:
+--   1) Ranking de transiciones de empleos
+--   2) Ranking de transiciones de destinos
+--   3) Mermaid de empleos
+--   4) Mermaid de destinos
+--   5) Competencias del puesto objetivo
+--   6) Áreas de experiencia del puesto objetivo
+-- ============================================================
+
+USE puestos;
+
+-- ============================================================
+-- 0. PARAMETRO DE ENTRADA
+-- ============================================================
+-- Opción A: indicar directamente el código de puesto
+SET @cod_puesto_objetivo := NULL;
+
+-- Opción B: buscarlo por texto en pto_des
+SET @texto_objetivo := 'JUAN SEBASTIAN ELCANO';
+
+-- Resolver el puesto objetivo
+SET @cod_puesto_objetivo := COALESCE(
+    @cod_puesto_objetivo,
+    (
+        SELECT pt.cod_puesto
+        FROM puestos_trabajo pt
+        WHERE UPPER(pt.pto_des) LIKE CONCAT('%', UPPER(@texto_objetivo), '%')
+        ORDER BY pt.cod_puesto
+        LIMIT 1
+    )
+);
+
+-- Validación rápida
+SELECT 
+    @cod_puesto_objetivo AS cod_puesto_objetivo,
+    pt.pto_des,
+    pt.cod_ciu
+FROM puestos_trabajo pt
+WHERE pt.cod_puesto = @cod_puesto_objetivo;
+
+-- ============================================================
+-- 1. LIMPIEZA DE TEMPORALES
+-- ============================================================
+DROP TEMPORARY TABLE IF EXISTS tmp_personas_objetivo;
+DROP TEMPORARY TABLE IF EXISTS tmp_empleos_seq;
+DROP TEMPORARY TABLE IF EXISTS tmp_destinos_seq;
+DROP TEMPORARY TABLE IF EXISTS tmp_empleos_edges;
+DROP TEMPORARY TABLE IF EXISTS tmp_destinos_edges;
+DROP TEMPORARY TABLE IF EXISTS tmp_puestos_historial;
+
+-- ============================================================
+-- 2. PERSONAS QUE HAN PASADO POR EL PUESTO OBJETIVO
+-- ============================================================
+CREATE TEMPORARY TABLE tmp_personas_objetivo AS
+SELECT DISTINCT rpd.id_personal
+FROM rel_personal_destino rpd
+WHERE rpd.cod_puesto = @cod_puesto_objetivo;
+
+SELECT 
+    COUNT(*) AS total_personas_con_ese_puesto
+FROM tmp_personas_objetivo;
+
+-- ============================================================
+-- 3. SECUENCIA REAL DE EMPLEOS
+-- ============================================================
+CREATE TEMPORARY TABLE tmp_empleos_seq AS
+SELECT
+    rpe.id,
+    rpe.personal_id,
+    rpe.cod_empleo,
+    rpe.fecha_inicio,
+    rpe.fecha_asignada,
+    LEAD(rpe.cod_empleo) OVER (
+        PARTITION BY rpe.personal_id
+        ORDER BY rpe.fecha_inicio, rpe.id
+    ) AS siguiente_empleo,
+    LEAD(rpe.fecha_inicio) OVER (
+        PARTITION BY rpe.personal_id
+        ORDER BY rpe.fecha_inicio, rpe.id
+    ) AS siguiente_fecha_inicio
+FROM rel_personal_empleo rpe
+JOIN tmp_personas_objetivo tpo
+  ON tpo.id_personal = rpe.personal_id;
+
+CREATE TEMPORARY TABLE tmp_empleos_edges AS
+SELECT
+    tes.cod_empleo AS empleo_origen,
+    tes.siguiente_empleo AS empleo_destino,
+    COUNT(*) AS frecuencia
+FROM tmp_empleos_seq tes
+WHERE tes.siguiente_empleo IS NOT NULL
+  AND tes.cod_empleo <> tes.siguiente_empleo
+GROUP BY tes.cod_empleo, tes.siguiente_empleo;
+
+-- ============================================================
+-- 4. SECUENCIA REAL DE DESTINOS
+-- ============================================================
+CREATE TEMPORARY TABLE tmp_destinos_seq AS
+SELECT
+    rpd.id,
+    rpd.id_personal,
+    rpd.cod_puesto,
+    rpd.fecha_inicio,
+    rpd.fecha_cese,
+    LEAD(rpd.cod_puesto) OVER (
+        PARTITION BY rpd.id_personal
+        ORDER BY rpd.fecha_inicio, rpd.id
+    ) AS siguiente_puesto,
+    LEAD(rpd.fecha_inicio) OVER (
+        PARTITION BY rpd.id_personal
+        ORDER BY rpd.fecha_inicio, rpd.id
+    ) AS siguiente_fecha_inicio
+FROM rel_personal_destino rpd
+JOIN tmp_personas_objetivo tpo
+  ON tpo.id_personal = rpd.id_personal;
+
+CREATE TEMPORARY TABLE tmp_destinos_edges AS
+SELECT
+    tds.cod_puesto AS puesto_origen,
+    tds.siguiente_puesto AS puesto_destino,
+    COUNT(*) AS frecuencia
+FROM tmp_destinos_seq tds
+WHERE tds.siguiente_puesto IS NOT NULL
+  AND tds.cod_puesto <> tds.siguiente_puesto
+GROUP BY tds.cod_puesto, tds.siguiente_puesto;
+
+-- ============================================================
+-- 5. HISTORIAL DE PUESTOS DE ESAS PERSONAS
+--    (para inferir perfil real de trayectorias)
+-- ============================================================
+CREATE TEMPORARY TABLE tmp_puestos_historial AS
+SELECT DISTINCT rpd.cod_puesto
+FROM rel_personal_destino rpd
+JOIN tmp_personas_objetivo tpo
+  ON tpo.id_personal = rpd.id_personal;
+
+-- ============================================================
+-- 6. RESULTADO 1: RANKING DE TRANSICIONES DE EMPLEOS
+-- ============================================================
+SELECT
+    'RANKING_TRANSICIONES_EMPLEOS' AS bloque,
+    tee.empleo_origen,
+    tee.empleo_destino,
+    tee.frecuencia
+FROM tmp_empleos_edges tee
+ORDER BY tee.frecuencia DESC, tee.empleo_origen, tee.empleo_destino;
+
+-- ============================================================
+-- 7. RESULTADO 2: RANKING DE TRANSICIONES DE DESTINOS
+-- ============================================================
+SELECT
+    'RANKING_TRANSICIONES_DESTINOS' AS bloque,
+    tde.puesto_origen,
+    p1.pto_des AS puesto_origen_desc,
+    tde.puesto_destino,
+    p2.pto_des AS puesto_destino_desc,
+    tde.frecuencia
+FROM tmp_destinos_edges tde
+LEFT JOIN puestos_trabajo p1
+  ON p1.cod_puesto = tde.puesto_origen
+LEFT JOIN puestos_trabajo p2
+  ON p2.cod_puesto = tde.puesto_destino
+ORDER BY tde.frecuencia DESC, tde.puesto_origen, tde.puesto_destino;
+
+-- ============================================================
+-- 8. RESULTADO 3: MERMAID DE EMPLEOS
+-- ============================================================
+SELECT 'MERMAID_EMPLEOS_INICIO' AS bloque, 'flowchart LR' AS linea
+UNION ALL
+SELECT
+    'MERMAID_EMPLEOS' AS bloque,
+    CONCAT(
+        REPLACE(tee.empleo_origen, '-', '_'),
+        '["', tee.empleo_origen, '"] -->|', tee.frecuencia, '| ',
+        REPLACE(tee.empleo_destino, '-', '_'),
+        '["', tee.empleo_destino, '"]'
+    ) AS linea
+FROM tmp_empleos_edges tee
+ORDER BY bloque, linea;
+
+-- ============================================================
+-- 9. RESULTADO 4: MERMAID DE DESTINOS
+-- ============================================================
+SELECT 'MERMAID_DESTINOS_INICIO' AS bloque, 'flowchart LR' AS linea
+UNION ALL
+SELECT
+    'MERMAID_DESTINOS' AS bloque,
+    CONCAT(
+        'P', REPLACE(tde.puesto_origen, '-', '_'),
+        '["', tde.puesto_origen, ' - ', COALESCE(p1.pto_des, 'SIN_DESC'), '"]',
+        ' -->|', tde.frecuencia, '| ',
+        'P', REPLACE(tde.puesto_destino, '-', '_'),
+        '["', tde.puesto_destino, ' - ', COALESCE(p2.pto_des, 'SIN_DESC'), '"]'
+    ) AS linea
+FROM tmp_destinos_edges tde
+LEFT JOIN puestos_trabajo p1
+  ON p1.cod_puesto = tde.puesto_origen
+LEFT JOIN puestos_trabajo p2
+  ON p2.cod_puesto = tde.puesto_destino
+ORDER BY bloque, linea;
+
+-- ============================================================
+-- 10. RESULTADO 5: COMPETENCIAS DEL PUESTO OBJETIVO
+-- ============================================================
+SELECT
+    'COMPETENCIAS_PUESTO_OBJETIVO' AS bloque,
+    rcp.cod_puesto,
+    rcp.cod_competencia,
+    c.descripcion_competencia,
+    rcp.tipo_vinculo,
+    rcp.nivel
+FROM rel_competencia_puesto rcp
+LEFT JOIN competencias c
+  ON c.cod_competencia = rcp.cod_competencia
+WHERE rcp.cod_puesto = @cod_puesto_objetivo
+ORDER BY rcp.cod_competencia, rcp.tipo_vinculo;
+
+-- ============================================================
+-- 11. RESULTADO 6: AREAS DE EXPERIENCIA DEL PUESTO OBJETIVO
+-- ============================================================
+SELECT
+    'EXPERIENCIAS_PUESTO_OBJETIVO' AS bloque,
+    rep.cod_puesto,
+    rep.cod_experiencia,
+    ae.descripcion_experiencia
+FROM rel_experiencia_puesto rep
+LEFT JOIN areas_experiencia ae
+  ON ae.cod_experiencia = rep.cod_experiencia
+WHERE rep.cod_puesto = @cod_puesto_objetivo
+ORDER BY rep.cod_experiencia;
+
+-- ============================================================
+-- 12. RESULTADO 7: PERFIL REAL DE LAS PERSONAS QUE LLEGARON
+--     COMPETENCIAS MÁS FRECUENTES EN SU HISTORIAL DE PUESTOS
+-- ============================================================
+SELECT
+    'COMPETENCIAS_MAS_FRECUENTES_EN_TRAYECTORIAS' AS bloque,
+    rcp.cod_competencia,
+    c.descripcion_competencia,
+    COUNT(*) AS frecuencia
+FROM tmp_puestos_historial tph
+JOIN rel_competencia_puesto rcp
+  ON rcp.cod_puesto = tph.cod_puesto
+LEFT JOIN competencias c
+  ON c.cod_competencia = rcp.cod_competencia
+GROUP BY rcp.cod_competencia, c.descripcion_competencia
+ORDER BY frecuencia DESC, rcp.cod_competencia;
+
+-- ============================================================
+-- 13. RESULTADO 8: PERFIL REAL DE LAS PERSONAS QUE LLEGARON
+--     EXPERIENCIAS MÁS FRECUENTES EN SU HISTORIAL DE PUESTOS
+-- ============================================================
+SELECT
+    'EXPERIENCIAS_MAS_FRECUENTES_EN_TRAYECTORIAS' AS bloque,
+    rep.cod_experiencia,
+    ae.descripcion_experiencia,
+    COUNT(*) AS frecuencia
+FROM tmp_puestos_historial tph
+JOIN rel_experiencia_puesto rep
+  ON rep.cod_puesto = tph.cod_puesto
+LEFT JOIN areas_experiencia ae
+  ON ae.cod_experiencia = rep.cod_experiencia
+GROUP BY rep.cod_experiencia, ae.descripcion_experiencia
+ORDER BY frecuencia DESC, rep.cod_experiencia;
+
+-- ============================================================
+-- 14. RESULTADO 9: PUESTOS INMEDIATAMENTE ANTERIORES AL OBJETIVO
+-- ============================================================
+WITH previos AS (
+    SELECT
+        ds.id_personal,
+        ds.cod_puesto,
+        ds.siguiente_puesto
+    FROM tmp_destinos_seq ds
+)
+SELECT
+    'PUESTOS_PREVIOS_AL_OBJETIVO' AS bloque,
+    p.cod_puesto AS puesto_previo,
+    pt.pto_des AS puesto_previo_desc,
+    COUNT(*) AS frecuencia
+FROM previos p
+LEFT JOIN puestos_trabajo pt
+  ON pt.cod_puesto = p.cod_puesto
+WHERE p.siguiente_puesto = @cod_puesto_objetivo
+GROUP BY p.cod_puesto, pt.pto_des
+ORDER BY frecuencia DESC, p.cod_puesto;
+
+-- ============================================================
+-- 15. RESULTADO 10: EMPLEO MÁS HABITUAL DE LLEGADA AL OBJETIVO
+-- ============================================================
+WITH llegadas AS (
+    SELECT
+        rpd.id_personal,
+        rpd.fecha_inicio AS fecha_llegada_objetivo
+    FROM rel_personal_destino rpd
+    WHERE rpd.cod_puesto = @cod_puesto_objetivo
+),
+empleo_en_llegada AS (
+    SELECT
+        l.id_personal,
+        rpe.cod_empleo,
+        ROW_NUMBER() OVER (
+            PARTITION BY l.id_personal, l.fecha_llegada_objetivo
+            ORDER BY rpe.fecha_inicio DESC, rpe.id DESC
+        ) AS rn
+    FROM llegadas l
+    JOIN rel_personal_empleo rpe
+      ON rpe.personal_id = l.id_personal
+     AND rpe.fecha_inicio <= l.fecha_llegada_objetivo
+)
+SELECT
+    'EMPLEO_DE_LLEGADA_AL_OBJETIVO' AS bloque,
+    eel.cod_empleo,
+    COUNT(*) AS frecuencia
+FROM empleo_en_llegada eel
+WHERE eel.rn = 1
+GROUP BY eel.cod_empleo
+ORDER BY frecuencia DESC, eel.cod_empleo;
+```
+
+---
+
+# Qué te devuelve este script
+
+## 1. Ranking de transiciones de empleos
+
+Ejemplo:
+
+```text id="t4hcja"
+CC -> CF
+CF -> CN
+```
+
+## 2. Ranking de transiciones de destinos
+
+Ejemplo:
+
+```text id="jlwmwh"
+puesto A -> puesto B
+puesto B -> puesto ELCANO
+```
+
+## 3. Mermaid de empleos
+
+Listo para pegar en Mermaid Live.
+
+## 4. Mermaid de destinos
+
+También listo para pegar.
+
+## 5. Competencias del puesto objetivo
+
+Las que exige directamente `rel_competencia_puesto`.
+
+## 6. Áreas de experiencia del puesto objetivo
+
+Las que exige directamente `rel_experiencia_puesto`.
+
+## 7 y 8. Perfil real de las trayectorias
+
+Lo que más aparece en el historial de quienes llegaron.
+
+## 9. Puestos previos al objetivo
+
+Muy útil para saber “qué destino suele venir justo antes”.
+
+## 10. Empleo de llegada al objetivo
+
+Para saber si normalmente se llega como `CN`, `CF`, etc.
+
+---
+
+# Cómo lo usaría en la pantalla “Ver itinerario real hacia este puesto”
+
+Cuando el usuario pulse el botón:
+
+```text id="51smq5"
+Ver itinerario real hacia este puesto
+```
+
+tu backend debería:
+
+1. fijar `@cod_puesto_objetivo`
+2. ejecutar este script
+3. mostrar:
+
+   * tabla de transiciones
+   * Mermaid empleos
+   * Mermaid destinos
+   * competencias
+   * experiencias
+   * puestos previos
+
+---
+
+# Recomendación importante
+
+En tu modelo actual, este análisis será **tan bueno como lo sea el histórico** de:
+
+* `rel_personal_empleo`
+* `rel_personal_destino`
+
+Si el histórico aún es sintético o incompleto, el grafo será útil, pero no plenamente “verdadero” a nivel de carrera real.
+
+---
+
+Perfecto. Te preparo ambas cosas:
+
+1. un **procedimiento almacenado** para MySQL 8
+2. una **salida JSON** lista para consumir desde backend/frontend
+
+La idea es que desde la pantalla puedas invocar algo como:
+
+```sql id="4b9d5j"
+CALL sp_itinerario_real_puesto(NULL, 'JUAN SEBASTIAN ELCANO');
+```
+
+o bien:
+
+```sql id="q9w6m4"
+CALL sp_itinerario_real_puesto('12345', NULL);
+```
+
+---
+
+# 1) Procedimiento almacenado
+
+Este procedimiento:
+
+* resuelve el puesto objetivo
+* calcula personas que han pasado por él
+* construye transiciones reales
+* devuelve varios resultsets
+* y además devuelve un **resultset final JSON**
+
+## SQL
+
+```sql id="j8s2f1"
+DROP PROCEDURE IF EXISTS sp_itinerario_real_puesto;
+DELIMITER $$
+
+CREATE PROCEDURE sp_itinerario_real_puesto(
+    IN p_cod_puesto_objetivo VARCHAR(20),
+    IN p_texto_objetivo VARCHAR(255)
+)
+BEGIN
+    DECLARE v_cod_puesto_objetivo VARCHAR(20);
+
+    SET v_cod_puesto_objetivo = p_cod_puesto_objetivo;
+
+    IF v_cod_puesto_objetivo IS NULL OR v_cod_puesto_objetivo = '' THEN
+        SELECT pt.cod_puesto
+          INTO v_cod_puesto_objetivo
+          FROM puestos_trabajo pt
+         WHERE UPPER(pt.pto_des) LIKE CONCAT('%', UPPER(p_texto_objetivo), '%')
+         ORDER BY pt.cod_puesto
+         LIMIT 1;
+    END IF;
+
+    IF v_cod_puesto_objetivo IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'No se ha encontrado el puesto objetivo';
+    END IF;
+
+    DROP TEMPORARY TABLE IF EXISTS tmp_personas_objetivo;
+    DROP TEMPORARY TABLE IF EXISTS tmp_empleos_seq;
+    DROP TEMPORARY TABLE IF EXISTS tmp_destinos_seq;
+    DROP TEMPORARY TABLE IF EXISTS tmp_empleos_edges;
+    DROP TEMPORARY TABLE IF EXISTS tmp_destinos_edges;
+    DROP TEMPORARY TABLE IF EXISTS tmp_puestos_historial;
+
+    CREATE TEMPORARY TABLE tmp_personas_objetivo AS
+    SELECT DISTINCT rpd.id_personal
+      FROM rel_personal_destino rpd
+     WHERE rpd.cod_puesto = v_cod_puesto_objetivo;
+
+    CREATE TEMPORARY TABLE tmp_empleos_seq AS
+    SELECT
+        rpe.id,
+        rpe.personal_id,
+        rpe.cod_empleo,
+        rpe.fecha_inicio,
+        rpe.fecha_asignada,
+        LEAD(rpe.cod_empleo) OVER (
+            PARTITION BY rpe.personal_id
+            ORDER BY rpe.fecha_inicio, rpe.id
+        ) AS siguiente_empleo
+    FROM rel_personal_empleo rpe
+    JOIN tmp_personas_objetivo tpo
+      ON tpo.id_personal = rpe.personal_id;
+
+    CREATE TEMPORARY TABLE tmp_empleos_edges AS
+    SELECT
+        tes.cod_empleo AS empleo_origen,
+        tes.siguiente_empleo AS empleo_destino,
+        COUNT(*) AS frecuencia
+    FROM tmp_empleos_seq tes
+    WHERE tes.siguiente_empleo IS NOT NULL
+      AND tes.cod_empleo <> tes.siguiente_empleo
+    GROUP BY tes.cod_empleo, tes.siguiente_empleo;
+
+    CREATE TEMPORARY TABLE tmp_destinos_seq AS
+    SELECT
+        rpd.id,
+        rpd.id_personal,
+        rpd.cod_puesto,
+        rpd.fecha_inicio,
+        rpd.fecha_cese,
+        LEAD(rpd.cod_puesto) OVER (
+            PARTITION BY rpd.id_personal
+            ORDER BY rpd.fecha_inicio, rpd.id
+        ) AS siguiente_puesto
+    FROM rel_personal_destino rpd
+    JOIN tmp_personas_objetivo tpo
+      ON tpo.id_personal = rpd.id_personal;
+
+    CREATE TEMPORARY TABLE tmp_destinos_edges AS
+    SELECT
+        tds.cod_puesto AS puesto_origen,
+        tds.siguiente_puesto AS puesto_destino,
+        COUNT(*) AS frecuencia
+    FROM tmp_destinos_seq tds
+    WHERE tds.siguiente_puesto IS NOT NULL
+      AND tds.cod_puesto <> tds.siguiente_puesto
+    GROUP BY tds.cod_puesto, tds.siguiente_puesto;
+
+    CREATE TEMPORARY TABLE tmp_puestos_historial AS
+    SELECT DISTINCT rpd.cod_puesto
+      FROM rel_personal_destino rpd
+      JOIN tmp_personas_objetivo tpo
+        ON tpo.id_personal = rpd.id_personal;
+
+    -- 1. Cabecera
+    SELECT
+        v_cod_puesto_objetivo AS cod_puesto_objetivo,
+        pt.pto_des,
+        pt.cod_ciu,
+        (SELECT COUNT(*) FROM tmp_personas_objetivo) AS total_personas_objetivo
+    FROM puestos_trabajo pt
+    WHERE pt.cod_puesto = v_cod_puesto_objetivo;
+
+    -- 2. Ranking transiciones empleos
+    SELECT
+        tee.empleo_origen,
+        tee.empleo_destino,
+        tee.frecuencia
+    FROM tmp_empleos_edges tee
+    ORDER BY tee.frecuencia DESC, tee.empleo_origen, tee.empleo_destino;
+
+    -- 3. Ranking transiciones destinos
+    SELECT
+        tde.puesto_origen,
+        p1.pto_des AS puesto_origen_desc,
+        tde.puesto_destino,
+        p2.pto_des AS puesto_destino_desc,
+        tde.frecuencia
+    FROM tmp_destinos_edges tde
+    LEFT JOIN puestos_trabajo p1
+      ON p1.cod_puesto = tde.puesto_origen
+    LEFT JOIN puestos_trabajo p2
+      ON p2.cod_puesto = tde.puesto_destino
+    ORDER BY tde.frecuencia DESC, tde.puesto_origen, tde.puesto_destino;
+
+    -- 4. Competencias puesto objetivo
+    SELECT
+        rcp.cod_competencia,
+        c.descripcion_competencia,
+        rcp.tipo_vinculo,
+        rcp.nivel
+    FROM rel_competencia_puesto rcp
+    LEFT JOIN competencias c
+      ON c.cod_competencia = rcp.cod_competencia
+    WHERE rcp.cod_puesto = v_cod_puesto_objetivo
+    ORDER BY rcp.cod_competencia, rcp.tipo_vinculo;
+
+    -- 5. Experiencias puesto objetivo
+    SELECT
+        rep.cod_experiencia,
+        ae.descripcion_experiencia
+    FROM rel_experiencia_puesto rep
+    LEFT JOIN areas_experiencia ae
+      ON ae.cod_experiencia = rep.cod_experiencia
+    WHERE rep.cod_puesto = v_cod_puesto_objetivo
+    ORDER BY rep.cod_experiencia;
+
+    -- 6. JSON final
+    SELECT JSON_OBJECT(
+        'puestoObjetivo', JSON_OBJECT(
+            'codPuesto', v_cod_puesto_objetivo,
+            'descripcion', (
+                SELECT pt.pto_des
+                FROM puestos_trabajo pt
+                WHERE pt.cod_puesto = v_cod_puesto_objetivo
+            ),
+            'codCiu', (
+                SELECT pt.cod_ciu
+                FROM puestos_trabajo pt
+                WHERE pt.cod_puesto = v_cod_puesto_objetivo
+            ),
+            'totalPersonas', (
+                SELECT COUNT(*)
+                FROM tmp_personas_objetivo
+            )
+        ),
+        'rankingEmpleos', (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'origen', x.empleo_origen,
+                    'destino', x.empleo_destino,
+                    'frecuencia', x.frecuencia
+                )
+            )
+            FROM (
+                SELECT empleo_origen, empleo_destino, frecuencia
+                FROM tmp_empleos_edges
+                ORDER BY frecuencia DESC, empleo_origen, empleo_destino
+            ) x
+        ),
+        'rankingDestinos', (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'origen', x.puesto_origen,
+                    'origenDesc', x.puesto_origen_desc,
+                    'destino', x.puesto_destino,
+                    'destinoDesc', x.puesto_destino_desc,
+                    'frecuencia', x.frecuencia
+                )
+            )
+            FROM (
+                SELECT
+                    tde.puesto_origen,
+                    p1.pto_des AS puesto_origen_desc,
+                    tde.puesto_destino,
+                    p2.pto_des AS puesto_destino_desc,
+                    tde.frecuencia
+                FROM tmp_destinos_edges tde
+                LEFT JOIN puestos_trabajo p1
+                  ON p1.cod_puesto = tde.puesto_origen
+                LEFT JOIN puestos_trabajo p2
+                  ON p2.cod_puesto = tde.puesto_destino
+                ORDER BY tde.frecuencia DESC, tde.puesto_origen, tde.puesto_destino
+            ) x
+        ),
+        'mermaidEmpleos', (
+            SELECT CONCAT(
+                'flowchart LR\n',
+                GROUP_CONCAT(
+                    CONCAT(
+                        REPLACE(x.empleo_origen, '-', '_'),
+                        '["', x.empleo_origen, '"] -->|', x.frecuencia, '| ',
+                        REPLACE(x.empleo_destino, '-', '_'),
+                        '["', x.empleo_destino, '"]'
+                    )
+                    SEPARATOR '\n'
+                )
+            )
+            FROM (
+                SELECT empleo_origen, empleo_destino, frecuencia
+                FROM tmp_empleos_edges
+                ORDER BY frecuencia DESC, empleo_origen, empleo_destino
+            ) x
+        ),
+        'mermaidDestinos', (
+            SELECT CONCAT(
+                'flowchart LR\n',
+                GROUP_CONCAT(
+                    CONCAT(
+                        'P', REPLACE(x.puesto_origen, '-', '_'),
+                        '["', x.puesto_origen, ' - ', COALESCE(x.puesto_origen_desc, 'SIN_DESC'), '"] -->|',
+                        x.frecuencia, '| ',
+                        'P', REPLACE(x.puesto_destino, '-', '_'),
+                        '["', x.puesto_destino, ' - ', COALESCE(x.puesto_destino_desc, 'SIN_DESC'), '"]'
+                    )
+                    SEPARATOR '\n'
+                )
+            )
+            FROM (
+                SELECT
+                    tde.puesto_origen,
+                    p1.pto_des AS puesto_origen_desc,
+                    tde.puesto_destino,
+                    p2.pto_des AS puesto_destino_desc,
+                    tde.frecuencia
+                FROM tmp_destinos_edges tde
+                LEFT JOIN puestos_trabajo p1
+                  ON p1.cod_puesto = tde.puesto_origen
+                LEFT JOIN puestos_trabajo p2
+                  ON p2.cod_puesto = tde.puesto_destino
+                ORDER BY tde.frecuencia DESC, tde.puesto_origen, tde.puesto_destino
+            ) x
+        ),
+        'competenciasObjetivo', (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'codigo', x.cod_competencia,
+                    'descripcion', x.descripcion_competencia,
+                    'tipoVinculo', x.tipo_vinculo,
+                    'nivel', x.nivel
+                )
+            )
+            FROM (
+                SELECT
+                    rcp.cod_competencia,
+                    c.descripcion_competencia,
+                    rcp.tipo_vinculo,
+                    rcp.nivel
+                FROM rel_competencia_puesto rcp
+                LEFT JOIN competencias c
+                  ON c.cod_competencia = rcp.cod_competencia
+                WHERE rcp.cod_puesto = v_cod_puesto_objetivo
+                ORDER BY rcp.cod_competencia, rcp.tipo_vinculo
+            ) x
+        ),
+        'experienciasObjetivo', (
+            SELECT JSON_ARRAYAGG(
+                JSON_OBJECT(
+                    'codigo', x.cod_experiencia,
+                    'descripcion', x.descripcion_experiencia
+                )
+            )
+            FROM (
+                SELECT
+                    rep.cod_experiencia,
+                    ae.descripcion_experiencia
+                FROM rel_experiencia_puesto rep
+                LEFT JOIN areas_experiencia ae
+                  ON ae.cod_experiencia = rep.cod_experiencia
+                WHERE rep.cod_puesto = v_cod_puesto_objetivo
+                ORDER BY rep.cod_experiencia
+            ) x
+        )
+    ) AS itinerario_json;
+
+END$$
+
+DELIMITER ;
+```
+
+---
+
+# 2) Cómo se usa
+
+## Buscar por texto
+
+```sql id="r8u2s6"
+CALL sp_itinerario_real_puesto(NULL, 'JUAN SEBASTIAN ELCANO');
+```
+
+## Buscar por código
+
+```sql id="n5k7x1"
+CALL sp_itinerario_real_puesto('12345', NULL);
+```
+
+---
+
+# 3) Qué devuelve
+
+El procedimiento devuelve **6 resultsets**:
+
+1. Cabecera del puesto objetivo
+2. Ranking de transiciones de empleos
+3. Ranking de transiciones de destinos
+4. Competencias del puesto objetivo
+5. Experiencias del puesto objetivo
+6. Un único campo `itinerario_json` con todo empaquetado
+
+---
+
+# 4) Formato del JSON
+
+El JSON final tiene esta estructura:
+
+```json id="a2m4v8"
+{
+  "puestoObjetivo": {
+    "codPuesto": "12345",
+    "descripcion": "JUAN SEBASTIAN ELCANO",
+    "codCiu": "60001000",
+    "totalPersonas": 8
+  },
+  "rankingEmpleos": [
+    {
+      "origen": "CC",
+      "destino": "CF",
+      "frecuencia": 5
+    },
+    {
+      "origen": "CF",
+      "destino": "CN",
+      "frecuencia": 4
+    }
+  ],
+  "rankingDestinos": [
+    {
+      "origen": "10001",
+      "origenDesc": "Estado Mayor",
+      "destino": "10002",
+      "destinoDesc": "Segundo Comandante",
+      "frecuencia": 3
+    }
+  ],
+  "mermaidEmpleos": "flowchart LR\nCC[\"CC\"] -->|5| CF[\"CF\"]\nCF[\"CF\"] -->|4| CN[\"CN\"]",
+  "mermaidDestinos": "flowchart LR\nP10001[\"10001 - Estado Mayor\"] -->|3| P10002[\"10002 - Segundo Comandante\"]",
+  "competenciasObjetivo": [
+    {
+      "codigo": "LID",
+      "descripcion": "Liderazgo de Equipos",
+      "tipoVinculo": "EXIGIDA",
+      "nivel": "Avanzado"
+    }
+  ],
+  "experienciasObjetivo": [
+    {
+      "codigo": "MAN",
+      "descripcion": "Mando (CGA y CIM)"
+    }
+  ]
+}
+```
+
+---
+
+# 5) Cómo consumir el JSON en Java
+
+Si usas Spring/JPA/JDBC, lo normal es leer el último resultset y coger el campo `itinerario_json`.
+
+Ejemplo orientativo con JDBC:
+
+```java id="0b7x6n"
+CallableStatement cs = connection.prepareCall("{CALL sp_itinerario_real_puesto(?, ?)}");
+cs.setString(1, null);
+cs.setString(2, "JUAN SEBASTIAN ELCANO");
+
+boolean hasResults = cs.execute();
+int resultSetIndex = 0;
+String json = null;
+
+while (hasResults) {
+    try (ResultSet rs = cs.getResultSet()) {
+        resultSetIndex++;
+        if (resultSetIndex == 6 && rs.next()) {
+            json = rs.getString("itinerario_json");
+        }
+    }
+    hasResults = cs.getMoreResults();
+}
+```
+
+---
+
+# 6) Variante: procedimiento que devuelva solo JSON
+
+Si prefieres simplificar el backend, te recomiendo otro procedimiento que devuelva **solo el JSON**. Es más cómodo para frontend/API.
+
+## SQL
+
+```sql id="m1y4q2"
+DROP PROCEDURE IF EXISTS sp_itinerario_real_puesto_json;
+DELIMITER $$
+
+CREATE PROCEDURE sp_itinerario_real_puesto_json(
+    IN p_cod_puesto_objetivo VARCHAR(20),
+    IN p_texto_objetivo VARCHAR(255)
+)
+BEGIN
+    CALL sp_itinerario_real_puesto(p_cod_puesto_objetivo, p_texto_objetivo);
+END$$
+
+DELIMITER ;
+```
+
+Eso realmente seguirá devolviendo todos los resultsets. Si quieres una versión limpia de verdad, conviene duplicar el cuerpo y dejar solo el `SELECT itinerario_json`.
+
+---
+
+# 7) Recomendación práctica
+
+Yo haría dos procedimientos:
+
+* `sp_itinerario_real_puesto_debug`
+  Devuelve todos los resultsets, útil para validar.
+
+* `sp_itinerario_real_puesto_json`
+  Devuelve solo el JSON, útil para la aplicación.
+
+---
+
+# 8) Ajuste importante por tamaño de JSON
+
+Si hay muchas transiciones, `GROUP_CONCAT` puede truncarse. Conviene subir este parámetro antes de usarlo:
+
+```sql id="k7r1p5"
+SET SESSION group_concat_max_len = 1000000;
+```
+
+---
+
+# 9) Lo siguiente que te recomiendo
+
+Sí, totalmente.
+
+Si quieres un **itinerario profesional realista**, no basta con decir solo el **puesto destino**. Hay que fijar también el **punto de partida** del profesional, porque el camino cambia mucho según:
+
+* empleo actual
+* cuerpo
+* escala
+* especialidad
+* experiencia acumulada
+* destinos previos
+* cursos/títulos ya obtenidos
+
+No es lo mismo preguntar:
+
+* “¿qué recorrido tendría que hacer un **CC**?”
+* que “¿qué recorrido tendría que hacer un **CC del CGA**?”
+* o “¿qué recorrido tendría que hacer un **CC de Infantería de Marina**?”
+* o “¿qué recorrido tendría que hacer un **CF** que ya ha pasado por mando y Estado Mayor?”
+
+# Lo correcto sería modelarlo así
+
+## Entrada mínima
+
+* **profesional origen**
+* **puesto destino**
+
+## Profesional origen
+
+Puede identificarse de dos formas:
+
+### Opción A. Por persona real
+
+Usando `personal.id`
+
+Así el sistema toma directamente:
+
+* empleo actual
+* cuerpo
+* escala
+* ecom/efund
+* destinos previos
+* cursos/títulos/aptitudes/idiomas
+* historial de empleos
+
+### Opción B. Por perfil abstracto
+
+Por ejemplo:
+
+* empleo actual = `CC`
+* cuerpo = `CGA`
+* escala = `EOF`
+* experiencias = `MAN`, `PLA`
+* competencias = `LID`, `POB`
+
+Esto sirve si no quieres partir de una persona concreta.
+
+# Entonces la pregunta correcta sería
+
+En vez de:
+
+```text id="x2p8l7"
+¿Qué recorrido profesional tendría que hacer para comandar el Juan Sebastián Elcano?
+```
+
+sería mejor:
+
+```text id="n4k6v1"
+Partiendo de este profesional, ¿qué recorrido real o más probable tendría para llegar a este puesto?
+```
+
+o:
+
+```text id="s7m3q9"
+Desde este empleo/cuerpo/escala, ¿cuál es el itinerario más frecuente hacia este puesto?
+```
+
+# Qué análisis haría entonces
+
+A partir de un origen y un destino, el sistema podría darte tres cosas:
+
+## 1. Itinerario real observado
+
+Buscar personas con un perfil parecido al origen que hayan llegado al puesto destino y ver:
+
+* qué empleos recorrieron
+* qué destinos ocuparon
+* en qué orden
+
+## 2. Brechas del profesional respecto al puesto destino
+
+Comparar el perfil origen con los requisitos del puesto objetivo:
+
+* competencias que le faltan
+* áreas de experiencia que le faltan
+* especialidades que le faltan
+* títulos/cursos/aptitudes/idiomas que le faltan
+
+## 3. Ruta recomendada
+
+No solo “lo que pasó”, sino “qué pasos intermedios parecen más útiles” según los datos.
+
+# Mi recomendación de modelo
+
+Yo haría un procedimiento con esta firma conceptual:
+
+```sql id="c8v2r4"
+sp_itinerario_desde_profesional_a_puesto(
+    p_personal_id,
+    p_cod_puesto_objetivo
+)
+```
+
+Y opcionalmente otro por perfil:
+
+```sql id="f5j1t8"
+sp_itinerario_desde_perfil_a_puesto(
+    p_cod_empleo,
+    p_cod_cuerpo,
+    p_cod_escala,
+    p_cod_puesto_objetivo
+)
+```
+
+# Qué devolvería
+
+* perfil actual del profesional
+* puesto objetivo
+* brechas entre origen y destino
+* transiciones de empleo más frecuentes
+* transiciones de destino más frecuentes
+* candidatos históricos comparables
+* Mermaid de empleos
+* Mermaid de destinos
+* JSON completo para frontend
+
+# Conclusión
+
+Sí: **deberíamos indicar de qué profesional partimos y a qué puesto quiere llegar**.
+Ese es el enfoque correcto si quieres que el resultado sea realmente útil y no solo un grafo general del puesto destino.
+
+Puedo prepararte ahora el diseño exacto del procedimiento almacenado para ese caso, con entrada por `personal_id` y salida JSON.
+
+

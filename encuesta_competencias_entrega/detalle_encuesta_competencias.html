@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Detalle de encuesta de competencias</title>
+  <link rel="stylesheet" href="encuesta_competencias.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="page-shell">
+    <div class="page-content">
+      <section class="card">
+        <div class="card-header toolbar-main">
+          <div>
+            <div class="toolbar-title" id="tituloEncuesta">Detalle de encuesta</div>
+            <div class="footer-note" id="subtituloEncuesta"></div>
+          </div>
+
+          <div class="toolbar-buttons">
+            <a class="btn-action" href="busqueda_encuestas_competencias.html">
+              <i class="fa-solid fa-arrow-left"></i> Volver a búsqueda
+            </a>
+
+            <a id="btnAyudaDetalle" class="btn-action" href="ayuda_encuestas_competencias.html">
+              <i class="fa-solid fa-question-circle"></i> Ayuda
+            </a>
+          </div>
+        </div>
+
+        <div id="detalleContenido"></div>
+      </section>
+    </div>
+  </div>
+
+  <script src="encuestas_competencias_data.js"></script>
+  <script>
+    function getParam(name) {
+      return new URLSearchParams(window.location.search).get(name);
+    }
+
+    function pill(text, cls = 'badge-gray') {
+      return `<span class="badge ${cls}">${text}</span>`;
+    }
+
+    function cardItem(item) {
+      return `
+        <div class="list-card">
+          <strong>${item.tipo}: ${item.codigo || '-'}</strong> · ${item.descripcion || ''}
+          <p>${item.justificacion || ''}</p>
+        </div>
+      `;
+    }
+
+    function impactCard(item) {
+      return `
+        <div class="score-box">
+          <h4>${item.area}</h4>
+          <div>${pill(item.valoracionTexto || item.valoracion, 'badge-blue')}</div>
+          <p>${item.justificacion}</p>
+        </div>
+      `;
+    }
+
+    function auditRows(items) {
+      return items.map(i => `
+        <tr>
+          <td>${i.seccion}</td>
+          <td>${i.pregunta}</td>
+          <td>${i.item}</td>
+          <td>${i.tipo}</td>
+          <td>${i.codigo || '-'}</td>
+          <td>${i.respuesta || '-'}</td>
+          <td>${i.valorNumerico ?? '-'}</td>
+          <td>${i.coeficiente ?? '-'}</td>
+          <td>${i.factorDestino || '-'}</td>
+        </tr>
+      `).join('');
+    }
+
+    const id = getParam('id');
+    const encuesta = ENCUESTAS_COMPETENCIAS.find(x => x.idEncuesta === id) || ENCUESTAS_COMPETENCIAS[0];
+
+    document.getElementById('tituloEncuesta').textContent = `Encuesta ${encuesta.idEncuesta}`;
+    document.getElementById('subtituloEncuesta').innerHTML =
+      `${pill(encuesta.estadoEncuesta, encuesta.estadoEncuesta === 'VALIDADA' ? 'badge-green' : encuesta.estadoEncuesta === 'EN_CURSO' ? 'badge-gold' : 'badge-blue')}
+       ${pill(encuesta.rolEvaluador)}
+       <span style="margin-left:8px;">${encuesta.resumenPerfil || ''}</span>`;
+
+    document.getElementById('btnAyudaDetalle').href =
+      `ayuda_encuestas_competencias.html?page=detalle&id=${encodeURIComponent(encuesta.idEncuesta)}`;
+
+    document.getElementById('detalleContenido').innerHTML = `
+      <div class="tabs">
+        <button class="tab active" data-tab="tabResumen">Resumen</button>
+        <button class="tab" data-tab="tabS1">Sección 1</button>
+        <button class="tab" data-tab="tabS2">Sección 2</button>
+        <button class="tab" data-tab="tabS3">Sección 3</button>
+        <button class="tab" data-tab="tabAudit">Auditoría</button>
+      </div>
+
+      <div id="tabResumen" class="tab-panel active">
+        <div class="grid-2">
+          <div class="subcard">
+            <h3 class="section-title">Metadatos de encuesta</h3>
+            <div class="definition-list">
+              <div class="term">Id encuesta</div><div class="value">${encuesta.idEncuesta}</div>
+              <div class="term">Año</div><div class="value">${encuesta.anioEncuesta}</div>
+              <div class="term">Tipo</div><div class="value">${encuesta.tipoEncuesta}</div>
+              <div class="term">Estado</div><div class="value">${encuesta.estadoEncuesta}</div>
+              <div class="term">Fecha creación</div><div class="value">${encuesta.fechaCreacion}</div>
+              <div class="term">Fecha cierre</div><div class="value">${encuesta.fechaCierre || '-'}</div>
+              <div class="term">Puesto</div><div class="value">${encuesta.codigoPuesto}</div>
+              <div class="term">Origen</div><div class="value">${encuesta.origenSistema}</div>
+            </div>
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">Posicionamiento rápido</h3>
+            <div class="kpi-row" style="grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:0;">
+              <div class="kpi-card">
+                <div class="kpi-label">Fortalezas S1</div>
+                <div class="kpi-value">${encuesta.seccion1.fortalezas.length}</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Debilidades S1</div>
+                <div class="kpi-value">${encuesta.seccion1.debilidades.length}</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Fortalezas S3</div>
+                <div class="kpi-value">${encuesta.seccion3.fortalezas.length}</div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-label">Mejoras S3</div>
+                <div class="kpi-value">${encuesta.seccion3.mejoras.length}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="subcard">
+            <h3 class="section-title">Datos del evaluado</h3>
+            <div class="definition-list">
+              <div class="term">Nombre</div><div class="value">${encuesta.evaluado.nombreCompleto}</div>
+              <div class="term">DNI</div><div class="value">${encuesta.evaluado.dni}</div>
+              <div class="term">Empleo</div><div class="value">${encuesta.evaluado.empleo}</div>
+              <div class="term">Escala / cuerpo</div><div class="value">${encuesta.evaluado.escala} / ${encuesta.evaluado.cuerpo}</div>
+              <div class="term">Cargo</div><div class="value">${encuesta.evaluado.cargo}</div>
+              <div class="term">Destino</div><div class="value">${encuesta.evaluado.destino}</div>
+              <div class="term">Código unidad</div><div class="value">${encuesta.evaluado.codigoUnidad}</div>
+              <div class="term">Código puesto</div><div class="value">${encuesta.evaluado.codigoPuesto}</div>
+            </div>
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">Datos del evaluador</h3>
+            <div class="definition-list">
+              <div class="term">Nombre</div><div class="value">${encuesta.evaluador.nombreCompleto}</div>
+              <div class="term">DNI</div><div class="value">${encuesta.evaluador.dni}</div>
+              <div class="term">Empleo</div><div class="value">${encuesta.evaluador.empleo}</div>
+              <div class="term">Escala / cuerpo</div><div class="value">${encuesta.evaluador.escala} / ${encuesta.evaluador.cuerpo}</div>
+              <div class="term">Cargo</div><div class="value">${encuesta.evaluador.cargo}</div>
+              <div class="term">Destino</div><div class="value">${encuesta.evaluador.destino}</div>
+              <div class="term">Código unidad</div><div class="value">${encuesta.evaluador.codigoUnidad}</div>
+              <div class="term">Rol</div><div class="value">${encuesta.rolEvaluador}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="tabS1" class="tab-panel">
+        <div class="subcard">
+          <h3 class="section-title">Áreas de impacto</h3>
+          <div class="score-grid">${encuesta.seccion1.areasImpacto.map(impactCard).join('')}</div>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="subcard">
+            <h3 class="section-title">Fortalezas del evaluador</h3>
+            ${encuesta.seccion1.fortalezas.map(cardItem).join('')}
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">Debilidades / áreas de desarrollo</h3>
+            ${encuesta.seccion1.debilidades.map(cardItem).join('')}
+          </div>
+        </div>
+      </div>
+
+      <div id="tabS2" class="tab-panel">
+        <div class="grid-2">
+          <div class="subcard">
+            <h3 class="section-title">2.1 Deseo de contar con el individuo</h3>
+            <p>${pill(encuesta.seccion2.p21.respuestaTexto || encuesta.seccion2.p21.respuesta, 'badge-blue')}</p>
+            <p>${encuesta.seccion2.p21.justificacion}</p>
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">2.2 Potencial para el siguiente empleo</h3>
+            <p>${pill(encuesta.seccion2.p22.respuestaTexto || encuesta.seccion2.p22.respuesta, 'badge-blue')}</p>
+            <p>${encuesta.seccion2.p22.justificacion}</p>
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">2.3 Potencial para especial responsabilidad</h3>
+            <p>${pill(encuesta.seccion2.p23.respuestaTexto || encuesta.seccion2.p23.respuesta, 'badge-blue')}</p>
+            <p>${encuesta.seccion2.p23.justificacion}</p>
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">2.4 Motivación para progresar</h3>
+            <p>${pill(encuesta.seccion2.p24.respuestaTexto || encuesta.seccion2.p24.respuesta, 'badge-blue')}</p>
+            <p>${encuesta.seccion2.p24.justificacion}</p>
+          </div>
+        </div>
+
+        <div class="subcard" style="margin-top:18px;">
+          <h3 class="section-title">2.5 Recomendación de carrera</h3>
+          <p><strong>${encuesta.seccion2.p25.respuesta}</strong></p>
+          <p>${encuesta.seccion2.p25.justificacion}</p>
+        </div>
+      </div>
+
+      <div id="tabS3" class="tab-panel">
+        <div class="subcard">
+          <h3 class="section-title">3.1 Expectativas de futuro</h3>
+          <p>${encuesta.seccion3.expectativas.map(x => pill(x, 'badge-gold')).join(' ')}</p>
+          <p>${encuesta.seccion3.justificacionExpectativas}</p>
+        </div>
+
+        <div class="subcard" style="margin-top:18px;">
+          <h3 class="section-title">3.2 Autopercepción profesional</h3>
+          <p>${pill(encuesta.seccion3.p32.respuestaTexto || encuesta.seccion3.p32.respuesta, 'badge-blue')}</p>
+          <p>${encuesta.seccion3.p32.justificacion || 'Sin justificación adicional.'}</p>
+        </div>
+
+        <div class="grid-2" style="margin-top:18px;">
+          <div class="subcard">
+            <h3 class="section-title">3.3 Fortalezas del evaluado</h3>
+            ${encuesta.seccion3.fortalezas.map(cardItem).join('')}
+          </div>
+
+          <div class="subcard">
+            <h3 class="section-title">3.4 Competencias / áreas a mejorar</h3>
+            ${encuesta.seccion3.mejoras.map(cardItem).join('')}
+          </div>
+        </div>
+
+        <div class="subcard" style="margin-top:18px;">
+          <h3 class="section-title">3.5 Observaciones adicionales</h3>
+          <p>${encuesta.seccion3.observacionesAdicionales || 'Sin observaciones.'}</p>
+        </div>
+      </div>
+
+      <div id="tabAudit" class="tab-panel">
+        <div class="info-strip">
+          <i class="fa-solid fa-file-circle-check"></i>
+          Esta pestaña reutiliza los datos auditables del Excel aportado para facilitar la trazabilidad funcional del prototipo.
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Sección</th>
+                <th>Pregunta</th>
+                <th>Ítem</th>
+                <th>Tipo</th>
+                <th>Código</th>
+                <th>Respuesta</th>
+                <th>Valor</th>
+                <th>Coeficiente</th>
+                <th>Factor</th>
+              </tr>
+            </thead>
+            <tbody>${auditRows(encuesta.auditoria)}</tbody>
+          </table>
+        </div>
+      </div>
+    `;
+
+    document.querySelectorAll('.tab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.tab-panel').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

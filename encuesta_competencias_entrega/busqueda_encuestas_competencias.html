@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Búsqueda de encuestas de competencias</title>
+  <link rel="stylesheet" href="encuesta_competencias.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+  <div class="page-shell">
+    <div class="page-content">
+      <section class="card">
+		<div class="card-header toolbar-main">
+		  <div class="toolbar-title">
+			Búsqueda de encuestas de competencias
+		  </div>
+
+		  <div class="toolbar-buttons">
+			<button class="btn-action" id="btnBuscar">
+			  <i class="fa-solid fa-magnifying-glass"></i> Buscar
+			</button>
+
+			<button class="btn-action" id="btnLimpiar">
+			  <i class="fa-solid fa-eraser"></i> Limpiar
+			</button>
+
+			<button class="btn-action" onclick="location.reload()">
+			  <i class="fa-solid fa-rotate"></i> Recargar
+			</button>
+
+			<button class="btn-action" onclick="window.location.href='ayuda_encuestas_competencias.html'">
+			  <i class="fa-solid fa-question-circle"></i> Ayuda
+			</button>
+		  </div>
+		</div>
+        <div class="info-strip"><i class="fa-solid fa-circle-info"></i>La búsqueda permite filtrar por identificador de encuesta, evaluado, evaluador, año, estado, rol del evaluador, destino y código de puesto.</div>
+        <div class="filter-panel">
+          <div class="grid-4">
+            <div class="field-group"><label for="fIdEncuesta">Id encuesta</label><div class="input-with-icon"><i class="fa-solid fa-hashtag"></i><input type="text" id="fIdEncuesta" placeholder="ENC-2026-AUD-001"></div></div>
+            <div class="field-group"><label for="fEvaluado">Evaluado</label><div class="input-with-icon"><i class="fa-solid fa-user"></i><input type="text" id="fEvaluado" placeholder="Nombre o DNI del evaluado"></div></div>
+            <div class="field-group"><label for="fEvaluador">Evaluador</label><div class="input-with-icon"><i class="fa-solid fa-user-check"></i><input type="text" id="fEvaluador" placeholder="Nombre o DNI del evaluador"></div></div>
+            <div class="field-group"><label for="fCodigoPuesto">Código puesto</label><input type="text" id="fCodigoPuesto" placeholder="PUESTO-DISOS-001"></div>
+          </div>
+          <div class="grid-4">
+            <div class="field-group"><label for="fAnio">Año</label><select id="fAnio"><option value="">Todos</option></select></div>
+            <div class="field-group"><label for="fEstado">Estado</label><select id="fEstado"><option value="">Todos</option></select></div>
+            <div class="field-group"><label for="fRol">Rol evaluador</label><select id="fRol"><option value="">Todos</option></select></div>
+            <div class="field-group"><label for="fDestino">Destino</label><input type="text" id="fDestino" placeholder="DISOS, FLOTA, JAL..."></div>
+          </div>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi-card"><div class="kpi-label">Encuestas</div><div class="kpi-value" id="kpiTotal">0</div></div>
+          <div class="kpi-card"><div class="kpi-label">Validadas</div><div class="kpi-value" id="kpiValidadas">0</div></div>
+          <div class="kpi-card"><div class="kpi-label">Cerradas</div><div class="kpi-value" id="kpiCerradas">0</div></div>
+          <div class="kpi-card"><div class="kpi-label">En curso</div><div class="kpi-value" id="kpiCurso">0</div></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Id encuesta</th><th>Año</th><th>Evaluado</th><th>Evaluador</th><th>Rol</th><th>Estado</th><th>Puesto</th><th>Destino</th><th style="width:140px">Acción</th></tr></thead>
+            <tbody id="tablaResultados"></tbody>
+          </table>
+        </div>
+        <div class="footer-note" id="resultadosInfo"></div>
+      </section>
+    </div>
+  </div>
+  <script src="encuestas_competencias_data.js"></script>
+  <script>
+    const qs = (id) => document.getElementById(id);
+    function fillSelect(id, values){ const sel=qs(id); values.forEach(v=>{ const opt=document.createElement('option'); opt.value=v; opt.textContent=v; sel.appendChild(opt);});}
+    function badgeEstado(estado){ const map={VALIDADA:'badge badge-green',CERRADA:'badge badge-blue',EN_CURSO:'badge badge-gold',BORRADOR:'badge badge-gray'}; return `<span class="${map[estado] || 'badge badge-gray'}">${estado}</span>`; }
+    function normaliza(txt){ return (txt || '').toString().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); }
+    function renderTabla(data){
+      const tbody = qs('tablaResultados'); tbody.innerHTML='';
+      if(!data.length){ tbody.innerHTML = `<tr><td colspan="9"><div class="info-strip" style="margin:12px;">No se han encontrado encuestas con los filtros seleccionados.</div></td></tr>`; }
+      else{
+        data.forEach(item => {
+          const tr=document.createElement('tr');
+          tr.innerHTML = `<td><strong>${item.idEncuesta}</strong></td><td>${item.anioEncuesta}</td><td>${item.evaluado.nombreCompleto}<br><span class="footer-note">${item.evaluado.dni}</span></td><td>${item.evaluador.nombreCompleto}</td><td><span class="badge badge-gray">${item.rolEvaluador}</span></td><td>${badgeEstado(item.estadoEncuesta)}</td><td>${item.codigoPuesto}</td><td>${item.evaluado.destino}</td><td><a class="btn-action btn-primary" href="detalle_encuesta_competencias.html?id=${encodeURIComponent(item.idEncuesta)}"><i class="fa-solid fa-eye"></i></a></td>`;
+          tbody.appendChild(tr);
+        });
+      }
+      qs('kpiTotal').textContent=data.length;
+      qs('kpiValidadas').textContent=data.filter(x=>x.estadoEncuesta==='VALIDADA').length;
+      qs('kpiCerradas').textContent=data.filter(x=>x.estadoEncuesta==='CERRADA').length;
+      qs('kpiCurso').textContent=data.filter(x=>x.estadoEncuesta==='EN_CURSO').length;
+      qs('resultadosInfo').textContent=`${data.length} registro(s) recuperado(s).`;
+    }
+    function filtrar(){
+      const vId=normaliza(qs('fIdEncuesta').value), vEvaluado=normaliza(qs('fEvaluado').value), vEvaluador=normaliza(qs('fEvaluador').value), vAnio=qs('fAnio').value, vEstado=qs('fEstado').value, vRol=qs('fRol').value, vPuesto=normaliza(qs('fCodigoPuesto').value), vDestino=normaliza(qs('fDestino').value);
+      const data = ENCUESTAS_COMPETENCIAS.filter(item => {
+        return (!vId || normaliza(item.idEncuesta).includes(vId))
+          && (!vEvaluado || normaliza(item.evaluado.nombreCompleto + ' ' + item.evaluado.dni).includes(vEvaluado))
+          && (!vEvaluador || normaliza(item.evaluador.nombreCompleto + ' ' + item.evaluador.dni).includes(vEvaluador))
+          && (!vAnio || String(item.anioEncuesta)===vAnio)
+          && (!vEstado || item.estadoEncuesta===vEstado)
+          && (!vRol || item.rolEvaluador===vRol)
+          && (!vPuesto || normaliza(item.codigoPuesto).includes(vPuesto))
+          && (!vDestino || normaliza(item.evaluado.destino).includes(vDestino));
+      });
+      renderTabla(data);
+    }
+    function limpiar(){ ['fIdEncuesta','fEvaluado','fEvaluador','fCodigoPuesto','fDestino'].forEach(id=>qs(id).value=''); ['fAnio','fEstado','fRol'].forEach(id=>qs(id).value=''); filtrar(); }
+    fillSelect('fAnio', [...new Set(ENCUESTAS_COMPETENCIAS.map(x=>x.anioEncuesta))].sort());
+    fillSelect('fEstado', ESTADOS); fillSelect('fRol', ROLES_EVALUADOR);
+    qs('btnBuscar').addEventListener('click', filtrar); qs('btnLimpiar').addEventListener('click', limpiar);
+    document.querySelectorAll('input').forEach(el=>el.addEventListener('keyup',e=>{ if(e.key==='Enter') filtrar(); }));
+    document.querySelectorAll('select').forEach(el=>el.addEventListener('change',filtrar));
+    filtrar();
+  </script>
+</body>
+</html>

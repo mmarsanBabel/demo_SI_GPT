@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel IGC - Enfoque Profesional</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --navy: #1a3a5a;
+            --accent: #2c7be5;
+            --bg: #f4f7f9;
+            --gold-bg: #fff9db;
+            --gold-border: #f08c00;
+            --text-main: #2d3748;
+        }
+        body { 
+            font-family: 'Segoe UI', sans-serif; 
+            background-color: var(--bg); 
+            margin: 0; 
+            padding: 25px; 
+            color: var(--text-main);
+            font-size: 16px; 
+        }
+        .container { max-width: 1500px; margin: 0 auto; background: white; padding: 30px; border-radius: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        header { text-align: center; border-bottom: 3px solid var(--navy); margin-bottom: 30px; padding-bottom: 15px; }
+        h1 { font-size: 28px; color: var(--navy); margin: 0; }
+        
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }
+        
+        table { width: 100%; border-collapse: collapse; background: white; font-size: 15px; }
+        th { background: var(--navy); color: white; padding: 15px; font-weight: 600; text-transform: uppercase; }
+        td { padding: 14px; text-align: center; border-bottom: 1px solid #edf2f7; cursor: pointer; }
+
+        /* RESALTADO DEL #1 (Sin iconos) */
+        .rank-1 { 
+            background-color: var(--gold-bg) !important; 
+            border: 2px solid var(--gold-border) !important;
+            font-weight: bold;
+        }
+        .rank-1 td { color: #856404; }
+
+        tr.selected td { background: #eef6ff !important; font-weight: bold; border-left: 5px solid var(--accent); }
+
+        .igc-badge-small { background: var(--navy); color: white; padding: 5px 12px; border-radius: 6px; font-weight: bold; }
+        .rank-1 .igc-badge-small { background: var(--gold-border); }
+        
+        .chart-container { position: relative; height: 380px; width: 100%; }
+        
+        .audit-section { display: none; border-top: 4px solid var(--navy); padding-top: 30px; margin-top: 20px; animation: fadeIn 0.4s; }
+        .audit-section.visible { display: block; }
+        .audit-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
+        
+        .card { border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; background: #fff; }
+        
+        .vector-table { font-size: 14px; width: 100%; margin: 20px 0; border-collapse: collapse; }
+        .vector-table th { background: #f1f5f9; color: var(--navy); border: 1px solid #cbd5e1; padding: 10px; }
+        .vector-table td { border: 1px solid #cbd5e1; padding: 12px; font-weight: bold; }
+
+        .result-highlight {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            background: linear-gradient(135deg, #1a3a5a 0%, #2c7be5 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-top: 20px;
+        }
+        .result-value { font-size: 36px; font-weight: 800; }
+        .result-label { font-size: 14px; text-transform: uppercase; opacity: 0.9; }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Panel Estratégico de Idoneidad (IGC)</h1>
+    </header>
+
+    <div class="main-grid">
+        <div>
+            <h3 style="margin-top:0;">Ranking de Candidatos</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Pos.</th>
+                        <th>Candidato</th>
+                        <th>Empleo-Cuerpo</th>
+                        <th>DNI</th>
+                        <th>IGC (0-100)</th>
+                    </tr>
+                </thead>
+                <tbody id="rankingTable"></tbody>
+            </table>
+        </div>
+        <div class="card">
+			<a href="informe Tecnico IGC.pdf" target="_blank" class="radar-link" title="Ver Informe Técnico General">
+				<h3 style="text-align:center; margin-top:0;">Comparativa de Grupo</h3>
+				<div class="chart-container">
+					<canvas id="globalRadar"></canvas>
+				</div>
+			</a>
+        </div>
+    </div>
+
+    <div class="audit-section" id="auditArea">
+        <div class="audit-grid">
+            <div class="card">
+                <div style="border-bottom: 2px solid #eee; padding-bottom: 10px; margin-bottom: 15px;">
+                    <span style="font-size: 12px; font-weight: bold; color: var(--accent); text-transform: uppercase;">Detalle de Auditoría</span>
+                    <h2 id="audName" style="margin:5px 0; color:var(--navy); font-size: 26px;"></h2>
+                    <p id="audMeta" style="color:#64748b; margin: 0; font-size: 16px; font-weight: 500;"></p>
+                </div>
+                
+                <table class="vector-table">
+                    <thead>
+                        <tr>
+                            <th>CAE_n</th><th>IIT_n</th><th>FAN_n</th><th>Fproy_n</th><th>Fsin_n</th><th>IGCbase</th><th>Fesp</th>
+                        </tr>
+                    </thead>
+                    <tbody id="audVectors"></tbody>
+                </table>
+                
+                <div style="margin-top:15px; padding:15px; background:#fdfdfd; border-left: 5px solid var(--accent);">
+                    <strong>Análisis:</strong>
+                    <p id="audDesc" style="font-size: 15px; margin: 8px 0 0 0; color: #4a5568;"></p>
+                </div>
+
+                <div class="result-highlight">
+                    <div class="result-item" style="text-align:center;">
+                        <span class="result-label">Resultado IGC</span>
+                        <span id="resIGC" class="result-value"></span>
+                    </div>
+                    <div style="width: 2px; height: 50px; background: rgba(255,255,255,0.2);"></div>
+                    <div class="result-item" style="text-align:center;">
+                        <span class="result-label">Posición Ranking</span>
+                        <span id="resRank" class="result-value"></span>
+                    </div>
+                </div>
+            </div>
+			<div class="card">
+				<h3 style="text-align:center; margin-top:0;">Perfil Individual vs Nivel Ideal</h3>
+				<div class="chart-container" style="position: relative; flex:1;"> 
+					<a id="linkIndividual" href="#" target="_blank" 
+					   style="display:block; width:100%; height:100%; position: absolute; top:0; left:0; z-index:100; cursor:pointer;">
+					</a>
+					<canvas id="indRadar"></canvas>
+				</div>
+			</div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const data = [
+        { id: 'Candidato A', empleo: 'CN-CGA', dni: '52356788Y', cae: 1.00, iit: 0.9718, fan: 0.7662, fproy: 0.9287, fsin: 0.8628, base: 0.896, fesp: 1.05, igc: 94.1 },
+        { id: 'Candidato B', empleo: 'COR-CIM', dni: '01335016R', cae: 0.70, iit: 0.0262, fan: 0.6657, fproy: 0.8330, fsin: 0.6473, base: 0.576, fesp: 0.95, igc: 54.7 },
+        { id: 'Candidato C', empleo: 'CF-CGA', dni: '16851367B', cae: 0.70, iit: 0.9175, fan: 0.7659, fproy: 0.9244, fsin: 0.8628, base: 0.824, fesp: 1.05, igc: 86.6 },
+        { id: 'Candidato D', empleo: 'TCOL-CINA', dni: '45249865G', cae: 0.53, iit: 0.4925, fan: 0.6995, fproy: 0.6150, fsin: 0.8325, base: 0.621, fesp: 1.00, igc: 62.1 }
+    ];
+
+    const labels = ['CAE', 'IIT', 'FAN', 'Fproy', 'Fsin', 'Fesp'];
+    let globalRadar, indRadar;
+    const sortedData = [...data].sort((a,b) => b.igc - a.igc);
+
+    function init() {
+        const tbody = document.getElementById('rankingTable');
+        
+        sortedData.forEach((c, index) => {
+            const tr = document.createElement('tr');
+            if(index === 0) tr.className = 'rank-1';
+            
+            tr.innerHTML = `
+                <td>#${index + 1}</td>
+                <td>${c.id}</td><td>${c.empleo}</td>
+                <td style="font-family:monospace;">${c.dni}</td>
+                <td><span class="igc-badge-small">${c.igc}</span></td>
+            `;
+            tr.onclick = () => updateAudit(c, tr);
+            tbody.appendChild(tr);
+        });
+
+        const ctxGlobal = document.getElementById('globalRadar').getContext('2d');
+        globalRadar = new Chart(ctxGlobal, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: data.map(c => ({
+                    label: c.id,
+                    data: [c.cae, c.iit, c.fan, c.fproy, c.fsin, c.fesp],
+                    borderWidth: 2,
+                    borderColor: '#cbd5e1'
+                }))
+            },
+            options: { 
+                maintainAspectRatio: false,
+                scales: { r: { min: 0, max: 1.1, ticks: { display: false }, pointLabels: { font: { size: 14 } } } } 
+            }
+        });
+    }
+
+    function updateAudit(c, row) {
+		document.querySelectorAll('tr').forEach(r => r.classList.remove('selected'));
+			row.classList.add('selected');
+			
+			// 1. ACTUALIZACIÓN DEL ENLACE (Usando el ID del candidato para buscar el archivo)
+			const linkObj = document.getElementById('linkIndividual');
+			
+			// IMPORTANTE: Como el array 'candidatos' del app.js no es accesible aquí, 
+			// definimos el nombre del archivo directamente basado en el ID del candidato.
+			if(linkObj) {
+				linkObj.href = `informe Tecnico IGC - ${c.id}.pdf`;
+			}
+        
+        document.getElementById('auditArea').classList.add('visible');
+        document.getElementById('audName').innerText = c.id;
+        document.getElementById('audMeta').innerText = `${c.empleo} | DNI: ${c.dni}`;
+        
+        const rankPos = sortedData.findIndex(item => item.id === c.id) + 1;
+        document.getElementById('resIGC').innerText = c.igc;
+        document.getElementById('resRank').innerText = `#${rankPos}`;
+
+        document.getElementById('audVectors').innerHTML = `
+            <tr>
+                <td>${c.cae.toFixed(2)}</td><td>${c.iit.toFixed(2)}</td><td>${c.fan.toFixed(2)}</td>
+                <td>${c.fproy.toFixed(2)}</td><td>${c.fsin.toFixed(2)}</td><td>${c.base.toFixed(2)}</td><td>${c.fesp.toFixed(2)}</td>
+            </tr>`;
+        
+        document.getElementById('audDesc').innerText = c.igc > 85 
+            ? "Perfil con alto índice de concordancia. Los vectores técnicos y de sintonía muestran una alineación óptima con los objetivos estratégicos."
+            : "Perfil por debajo del umbral de excelencia. Se recomienda analizar las brechas en los vectores con menor puntuación.";
+
+        const ctxInd = document.getElementById('indRadar').getContext('2d');
+        if(indRadar) indRadar.destroy();
+        indRadar = new Chart(ctxInd, {
+            type: 'radar',
+            data: {
+                labels: labels,
+                datasets: [
+                    { label: 'Candidato', data: [c.cae, c.iit, c.fan, c.fproy, c.fsin, c.fesp], borderColor: '#e63946', backgroundColor: 'rgba(230, 57, 70, 0.2)', borderWidth: 4 },
+                    { label: 'Ideal', data: [1,1,1,1,1,1], borderColor: '#2d6a4f', borderDash: [5,5], fill: false }
+                ]
+            },
+            options: { maintainAspectRatio: false, events: [], scales: { r: { min: 0, max: 1.2, ticks: { display: false } } } }
+        });
+
+        globalRadar.data.datasets.forEach(ds => {
+            ds.borderColor = ds.label === c.id ? '#2c7be5' : '#cbd5e1';
+            ds.borderWidth = ds.label === c.id ? 5 : 1;
+        });
+        globalRadar.update();
+        document.getElementById('auditArea').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    init();
+</script>
+</body>
+</html>

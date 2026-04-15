@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Sistema de Idoneidad Armada - Dashboard IGC</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 15px; shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        .header { border-bottom: 3px solid #00447b; padding-bottom: 10px; margin-bottom: 20px; display: flex; justify-content: space-between; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .card { border: 1px solid #e1e4e8; padding: 20px; border-radius: 10px; }
+        .stat-box { background: #00447b; color: white; padding: 15px; border-radius: 8px; text-align: center; margin-top: 10px; }
+        .formula-display { font-family: 'Courier New', monospace; background: #f8f9fa; padding: 10px; font-size: 0.9rem; border-left: 4px solid #00447b; }
+        h3 { color: #00447b; margin-top: 0; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Dashboard de Evaluación IGC</h1>
+        <div style="text-align: right"><strong>Vacante:</strong> Jefe de Operaciones<br><small>ID: 2026-OP</small></div>
+    </div>
+
+    <div class="grid">
+        <div>
+            <div class="card">
+                <h3>Resumen de Contestación</h3>
+                <p><strong>Candidato:</strong> Capitán de Fragata (CGA)</p>
+                <div class="formula-display">
+                    IGC = CAE * (NC * S) * F_ali * FAC * F_proy * F_sin
+                </div>
+                <ul style="font-size: 0.9rem; line-height: 1.6;">
+                    <li><b>S1 (Valores):</b> Excepcional (FAC: 1.20)</li>
+                    <li><b>S2 (Proyección):</b> Alta (F_proy: 1.15)</li>
+                    <li><b>S3 (Alineamiento):</b> Consenso total (F_ali: 1.05)</li>
+                    <li><b>S3 (Sintonía):</b> Deseo de mando (F_sin: 1.10)</li>
+                </ul>
+                <div class="stat-box">
+                    <span style="font-size: 0.8rem; text-transform: uppercase;">Resultado IGC Final</span><br>
+                    <span style="font-size: 2.5rem; font-weight: bold;">8.43</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Gráfico de Araña: Perfil vs Puesto</h3>
+            <canvas id="radarIGC"></canvas>
+        </div>
+    </div>
+
+    <div class="card" style="margin-top: 20px; background: #fffbe6;">
+        <strong>Análisis Semántico:</strong> Se han detectado keywords clave (<i>"mando", "decisión", "ejemplo"</i>) en los campos obligatorios, lo que valida el incremento de la nota base mediante el coeficiente <b>S</b> de respaldo.
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('radarIGC').getContext('2d');
+    new Chart(ctx, {
+        type: 'radar',
+        data: {
+            labels: ['Liderazgo', 'Táctica', 'Gestión', 'Valores', 'Proyección', 'Alineamiento'],
+            datasets: [{
+                label: 'Requerido por Puesto',
+                data: [5, 5, 4, 5, 4, 5],
+                fill: true,
+                backgroundColor: 'rgba(0, 68, 123, 0.1)',
+                borderColor: '#00447b',
+                pointBackgroundColor: '#00447b'
+            }, {
+                label: 'Candidato Evaluado',
+                data: [4.9, 5, 3.8, 5, 4.8, 4.9],
+                fill: true,
+                backgroundColor: 'rgba(231, 76, 60, 0.2)',
+                borderColor: '#e74c3c',
+                pointBackgroundColor: '#e74c3c'
+            }]
+        },
+        options: {
+            scales: { r: { min: 0, max: 5, ticks: { stepSize: 1 } } },
+            plugins: { legend: { position: 'bottom' } }
+        }
+    });
+</script>
+
+</body>
+</html>

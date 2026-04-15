@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Informe IGC - Comparativa de Candidatos</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f9; color: #333; margin: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #003366; border-bottom: 2px solid #003366; padding-bottom: 10px; }
+        .grid-layout { display: flex; flex-wrap: wrap; gap: 20px; margin-top: 30px; }
+        .chart-container { flex: 1; min-width: 400px; padding: 20px; background: #fff; border: 1px solid #e1e8ed; border-radius: 8px; }
+        .stats-container { flex: 1; min-width: 300px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #003366; }
+        .winner { color: #27ae60; font-weight: bold; }
+        .badge { padding: 5px 10px; border-radius: 4px; font-size: 0.9em; font-weight: bold; }
+        .badge-a { background: rgba(54, 162, 235, 0.2); color: rgb(54, 162, 235); }
+        .badge-b { background: rgba(255, 99, 132, 0.2); color: rgb(255, 99, 132); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Informe de Idoneidad: Gestión de Sistemas Complejos</h1>
+    
+    <div class="grid-layout">
+        <div class="chart-container">
+            <h3>Perfil Competencial Consolidado</h3>
+            <canvas id="radarChart"></canvas>
+        </div>
+
+        <div class="stats-container">
+            <h3>Puntuación Final IGC</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Métrica</th>
+                        <th>Candidato A (CN)</th>
+                        <th>Candidato B (CF)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>CAE (Estructural)</td>
+                        <td>0.900</td>
+                        <td>0.870</td>
+                    </tr>
+                    <tr>
+                        <td>FAN (Rendimiento S1)</td>
+                        <td>1.077</td>
+                        <td>1.190</td>
+                    </tr>
+                    <tr>
+                        <td>Fproy (Potencial S2)</td>
+                        <td>1.012</td>
+                        <td>1.137</td>
+                    </tr>
+                    <tr>
+                        <td>Fsin (Sintonía S3)</td>
+                        <td>0.920 <small>(Punto Ciego)</small></td>
+                        <td>1.150 <small>(Honestidad)</small></td>
+                    </tr>
+                    <tr>
+                        <td>IIT (Técnico Norm.)</td>
+                        <td>0.840</td>
+                        <td>0.933</td>
+                    </tr>
+                    <tr style="font-size: 1.2em; background: #f0f4f8;">
+                        <td><strong>IGC FINAL</strong></td>
+                        <td><strong>1.733</strong></td>
+                        <td class="winner">2.274</td>
+                    </tr>
+                </tbody>
+            </table>
+            <p><strong>Veredicto:</strong> El Candidato B es seleccionado por su superioridad en <strong>Potencial (S2)</strong> y <strong>Sintonía (S3)</strong>, compensando su menor empleo jerárquico.</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    const ctx = document.getElementById('radarChart').getContext('2d');
+    const data = {
+        labels: [
+            'Valores (1.1.1)', 
+            'Liderazgo (1.1.2)', 
+            'Gestión (1.1.3)', 
+            'Técnica (1.1.4)', 
+            'Potencial Ascenso', 
+            'Sintonía Carrera'
+        ],
+        datasets: [{
+            label: 'Candidato A (CN - CG)',
+            data: [1.10, 1.20, 1.00, 1.00, 1.00, 0.85],
+            fill: true,
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            borderColor: 'rgb(54, 162, 235)',
+            pointBackgroundColor: 'rgb(54, 162, 235)',
+            pointBorderColor: '#fff',
+        }, {
+            label: 'Candidato B (CF - ING)',
+            data: [1.00, 1.00, 1.20, 1.20, 1.20, 1.15],
+            fill: true,
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            borderColor: 'rgb(255, 99, 132)',
+            pointBackgroundColor: 'rgb(255, 99, 132)',
+            pointBorderColor: '#fff',
+        }]
+    };
+
+    const config = {
+        type: 'radar',
+        data: data,
+        options: {
+            elements: { line: { borderWidth: 3 } },
+            scales: {
+                r: {
+                    angleLines: { display: true },
+                    suggestedMin: 0.5,
+                    suggestedMax: 1.3
+                }
+            }
+        },
+    };
+
+    new Chart(ctx, config);
+</script>
+
+</body>
+</html>
