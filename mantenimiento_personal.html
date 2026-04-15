@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mantenimiento de Personal</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+:root {
+    --navy: #003366;
+    --navy-light: #004a8d;
+    --bg-light: #f1f5f9;
+    --border: #cbd5e1;
+    --shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+html, body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--bg-light);
+    color: #333;
+    font-size: 14px;
+    overflow: hidden;
+}
+body { display: flex; flex-direction: column; }
+
+.main-toolbar {
+    flex: 0 0 auto;
+    background: white;
+    z-index: 1100;
+    padding: 15px 20px;
+    border-bottom: 2px solid var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.toolbar-buttons { display: flex; gap: 15px; align-items: center; }
+.toolbar-title {
+    color: var(--navy);
+    font-size: 20px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+.btn-tool {
+    display: inline-flex;
+    align-items: center;
+    font-size: 16px;
+    padding: 12px 18px;
+    gap: 10px;
+    white-space: nowrap;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 600;
+    color: var(--navy);
+}
+.btn-tool:hover { background: rgba(0, 51, 102, 0.05); border-radius: 4px; }
+.btn-tool i {
+    font-size: 20px;
+}
+
+.main-container {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: block;
+    width: 100%;
+}
+
+.tabs-container {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: nowrap;
+    gap: 5px;
+    margin: 30px 20px 0 20px;
+    border-bottom: 2px solid var(--navy);
+    background-color: transparent;
+}
+.tab-button {
+    flex: 0 0 auto;
+    background-color: #e2e8f0;
+    color: #64748b;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 15px;
+    padding: 14px 28px;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    display: inline-block !important;
+}
+.tab-button.active { background-color: var(--navy); color: white; }
+.tab-content { display: none !important; visibility: hidden; }
+.tab-content.active { display: block !important; visibility: visible; animation: fadeIn 0.3s; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+.card {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    width: calc(100% - 40px);
+    max-width: 1400px;
+    margin: 20px 0 20px 20px;
+    box-sizing: border-box;
+}
+
+.accordion-item {
+    border: 1px solid #ddd;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: white;
+}
+.accordion-header {
+    background-color: var(--navy-light);
+    color: white;
+    font-size: 14px;
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+}
+.accordion-header i.chevron { margin-right: 10px; transition: transform 0.3s; font-size: 10px; }
+.accordion-item.active .accordion-header i.chevron { transform: rotate(90deg); }
+.accordion-content { display: none; padding: 15px; background: white; }
+.accordion-item.active .accordion-content { display: block; height: auto !important; overflow: visible !important; }
+
+.info-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 8px;
+    align-items: flex-end;
+}
+.info-box label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    color: var(--navy);
+font-size: 12px;
+    text-transform: uppercase;
+}
+.info-box input, .info-box select {
+    width: 100%;
+    height: 32px;
+    font-size: 13px;
+    padding: 4px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 1.2;
+}
+.input-edit { border: 1px solid var(--navy) !important; background-color: white !important; }
+.input-readonly { background-color: #f8fafc !important; color: #475569; cursor: default; font-weight: 600; }
+
+.label-grupo-destacado {
+    background-color: var(--navy);
+    color: white !important;
+    padding: 6px 12px;
+    border-radius: 4px 4px 0 0;
+    display: table;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 15px;
+}
+.grupo-campos-container {
+    border: 1px solid var(--navy);
+    padding: 15px;
+    border-radius: 0 4px 4px 4px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+}
+
+.rel-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 25px;
+}
+.rel-table th {
+    background: #f8fafc;
+    text-align: left;
+    font-size: 12px;
+    padding: 10px;
+    border-bottom: 2px solid var(--border);
+    color: var(--navy);
+    text-transform: uppercase;
+}
+.rel-table td { font-size: 14px;
+    padding: 10px; border-bottom: 1px solid #e2e8f0; }
+.badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    margin-right: 5px;
+    text-transform: uppercase;
+}
+.badge-ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.badge-aux { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+
+#custom-confirm {
+    display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+    background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;
+}
+</style>
+</head>
+<body>
+
+<div class="main-toolbar">
+    <div class="toolbar-title">MANTENIMIENTO DE PERSONAL</div>
+    <div class="toolbar-buttons">
+        <button class="btn-tool" onclick="volverABusqueda()"><i class="fas fa-search"></i> Buscar</button>
+        <button id="btn-editar" class="btn-tool" onclick="editarPersonal()"><i class="fas fa-edit"></i> Editar</button>
+        <button id="btn-guardar" class="btn-tool" onclick="guardarPersonal()" style="display:none;"><i class="fas fa-save"></i> Guardar</button>
+        <button class="btn-tool" onclick="abrirAyuda()"><i class="fas fa-question-circle"></i> Ayuda</button>
+    </div>
+</div>
+
+<div class="main-container">
+    <div class="tabs-container">
+        <button class="tab-button active" onclick="switchTab(event, 'tab-datos')">Datos personales</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-empleos')">Empleos</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-destinos')">Destinos</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-meritos')">Méritos</button>
+        <button class="tab-button" onclick="switchTab(event, 'tab-ipec')">IPEC</button>
+    </div>
+
+    <div id="tab-datos" class="tab-content active">
+        <div class="card">
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 1. DATOS PERSONALES Y PROFESIONALES</div>
+                <div class="accordion-content">
+                    <div class="label-grupo-destacado"><i class="fas fa-id-card"></i> IDENTIFICACIÓN</div>
+                    <div class="grupo-campos-container">
+                        <div class="info-row">
+                            <div class="info-box" style="flex:1;"><label>DNI</label><input id="dni" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Nº escalafón</label><input id="numero_escalafon" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Fecha nacimiento</label><input id="fecha_nacimiento" class="input-readonly" readonly></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-box" style="flex:1;"><label>Nombre</label><input id="nombre" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Primer apellido</label><input id="primer_apellido" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Segundo apellido</label><input id="segundo_apellido" class="input-readonly" readonly></div>
+                        </div>
+                    </div>
+
+                    <div class="label-grupo-destacado"><i class="fas fa-medal"></i> SITUACIÓN PROFESIONAL</div>
+                    <div class="grupo-campos-container">
+                        <div class="info-row">
+                            <div class="info-box" style="flex:1;"><label>Empleo</label><input id="cod_empleo" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Escala</label><input id="cod_escala" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Cuerpo</label><input id="cod_cuerpo" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Fecha ascenso</label><input id="fecha_ascenso" class="input-readonly" readonly></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-box" style="flex:2;"><label>Cargo</label><input id="cargo" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Código puesto</label><input id="codigo_puesto" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Especialidad fundamental</label><input id="cod_especialidad_fundamental" class="input-readonly" readonly></div>
+                        </div>
+                    </div>
+
+                    <div class="label-grupo-destacado"><i class="fas fa-sitemap"></i> DESTINO ACTUAL Y RESIDENCIA</div>
+                    <div class="grupo-campos-container">
+                        <div class="info-row">
+                            <div class="info-box" style="flex:2;"><label>Destino</label><input id="destino" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Código unidad</label><input id="codigo_unidad" class="input-readonly" readonly></div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-box" style="flex:1;"><label>Provincia residencia</label><input id="provincia_res" class="input-readonly" readonly></div>
+                            <div class="info-box" style="flex:1;"><label>Localidad residencia</label><input id="localidad_res" class="input-readonly" readonly></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-empleos" class="tab-content">
+        <div class="card">
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 2. HISTORIAL DE EMPLEOS</div>
+                <div class="accordion-content">
+                    <table class="rel-table">
+                        <thead>
+                            <tr><th>F. Inicio</th><th>F. Asignada</th><th>Empleo</th><th>Descripción</th><th>Observaciones</th></tr>
+                        </thead>
+                        <tbody id="tabla-empleos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-destinos" class="tab-content">
+        <div class="card">
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 3. HISTORIAL DE DESTINOS</div>
+                <div class="accordion-content">
+                    <table class="rel-table">
+                        <thead>
+                            <tr><th>F. Inicio</th><th>F. Cese</th><th>Destino</th><th>Puesto</th><th>Función</th></tr>
+                        </thead>
+                        <tbody id="tabla-destinos"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-meritos" class="tab-content">
+        <div class="card">
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 4. TÍTULOS, APTITUDES, IDIOMAS Y ECOM</div>
+                <div class="accordion-content">
+                    <div class="label-grupo-destacado"><i class="fas fa-graduation-cap"></i> TÍTULOS</div>
+                    <div class="grupo-campos-container"><div id="titulos-wrap"></div></div>
+
+                    <div class="label-grupo-destacado"><i class="fas fa-certificate"></i> APTITUDES</div>
+                    <div class="grupo-campos-container"><div id="aptitudes-wrap"></div></div>
+
+                    <div class="label-grupo-destacado"><i class="fas fa-language"></i> IDIOMAS</div>
+                    <div class="grupo-campos-container"><div id="idiomas-wrap"></div></div>
+
+                    <div class="label-grupo-destacado"><i class="fas fa-microchip"></i> ECOM</div>
+                    <div class="grupo-campos-container"><div id="ecom-wrap"></div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="tab-ipec" class="tab-content">
+        <div class="card">
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 5. INFORMES PERSONALES (IPEC)</div>
+                <div class="accordion-content">
+                    <table class="rel-table">
+                        <thead>
+                            <tr><th>F. Inicio</th><th>F. Fin</th><th>Empleo</th><th>Destino informe</th><th>Alerta</th><th>Nota</th><th>DT</th></tr>
+                        </thead>
+                        <tbody id="tabla-ipec"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="custom-confirm">
+    <div style="background:white; padding:30px; border-radius:8px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.3); min-width:300px;">
+        <h3 style="color:var(--navy); margin-top:0;">¿Confirmar guardado?</h3>
+        <p style="margin-bottom:20px;">Los cambios se aplicarán a la ficha actual.</p>
+        <div style="display:flex; gap:10px; justify-content:center;">
+            <button onclick="cerrarConfirm(true)" style="background:var(--navy); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">SÍ, GUARDAR</button>
+            <button onclick="cerrarConfirm(false)" style="background:#e2e8f0; color:black; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">CANCELAR</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const PERSONAL_DATA = {
+    "1": {
+        id:1, dni:"12345678A", nombre:"JUAN", primer_apellido:"PEREZ", segundo_apellido:"MARTIN", numero_escalafon:"ESC-0001",
+        destino:"CUARTEL GENERAL DE LA FLOTA", codigo_unidad:"62111501", fecha_nacimiento:"1978-05-14", fecha_ascenso:"2022-10-04",
+        codigo_puesto:"22055", cod_empleo:"CN", cod_escala:"EOF", cod_cuerpo:"CGA", cod_especialidad_fundamental:"TI",
+        cargo:"Jefe de Sección de Operaciones", provincia_res:"MADRID", localidad_res:"MADRID",
+        empleos:[
+            {fecha_inicio:"2022-10-04", fecha_asignada:"2022-10-04", empleo:"CN", descripcion:"Capitán de Navío", observaciones:"Ascenso"},
+            {fecha_inicio:"2017-04-02", fecha_asignada:"2017-04-02", empleo:"CF", descripcion:"Capitán de Fragata", observaciones:"Ascenso"},
+            {fecha_inicio:"2009-09-26", fecha_asignada:"2009-09-26", empleo:"CC", descripcion:"Capitán de Corbeta", observaciones:"Ascenso"},
+            {fecha_inicio:"2001-10-11", fecha_asignada:"2001-10-11", empleo:"TN", descripcion:"Teniente de Navío", observaciones:"Ascenso"},
+            {fecha_inicio:"1998-07-16", fecha_asignada:"1998-07-16", empleo:"AN", descripcion:"Alférez de Navío", observaciones:"Ingreso"}
+        ],
+        destinos:[
+            {fecha_inicio:"2024-06-25", fecha_cese:"", destino:"ETSIAN", puesto:"22055", funcion:"COMANDANTE DIRECTOR"},
+            {fecha_inicio:"2023-11-01", fecha_cese:"2024-06-24", destino:"JAL-DIN", puesto:"22269", funcion:"JEFE PROY, OB Y NSIP"},
+            {fecha_inicio:"2017-08-01", fecha_cese:"2022-10-27", destino:"DIMAN", puesto:"22928", funcion:"SUBDEM"}
+        ],
+        titulos:["EMFAS","PRL"],
+        aptitudes:["SEGINFO","OTAN"],
+        idiomas:["EN - SLP 3333","FR - SLP 2222"],
+        ecom:["TI","TCI"],
+        ipec:[
+            {fecha_inicio:"2024-06-25", fecha_fin:"2025-06-30", empleo:"CN.ING.(EOF)", destino:"ESCUELA TÉCNICA SUPERIOR DE INGENIEROS DE ARMAS NAVALES", alerta:"", nota:"8,80", dt:""},
+            {fecha_inicio:"2023-07-01", fecha_fin:"2024-06-24", empleo:"CN.ING.(EOF)", destino:"DIRECCIÓN DE INFRAESTRUCTURA DE LA JAL", alerta:"", nota:"8,70", dt:""},
+            {fecha_inicio:"2022-07-01", fecha_fin:"2023-06-30", empleo:"CN.ING.(EOF)", destino:"DIRECCIÓN DE INFRAESTRUCTURA DE LA JAL", alerta:"N", nota:"8,90", dt:""}
+        ]
+    },
+    "2": {
+        id:2, dni:"23456789B", nombre:"MARIA", primer_apellido:"LOPEZ", segundo_apellido:"SERRANO", numero_escalafon:"ESC-0002",
+        destino:"FRAGATA ALVARO DE BAZAN (F-101)", codigo_unidad:"62212104", fecha_nacimiento:"1990-03-21", fecha_ascenso:"2024-07-01",
+        codigo_puesto:"22919", cod_empleo:"CF", cod_escala:"EOF", cod_cuerpo:"CGA", cod_especialidad_fundamental:"OPS",
+        cargo:"Oficial de Operaciones", provincia_res:"A CORUÑA", localidad_res:"FERROL",
+        empleos:[
+            {fecha_inicio:"2024-07-01", fecha_asignada:"2024-07-01", empleo:"CF", descripcion:"Capitán de Fragata", observaciones:"Ascenso"},
+            {fecha_inicio:"2021-07-01", fecha_asignada:"2021-07-01", empleo:"CC", descripcion:"Capitán de Corbeta", observaciones:"Ascenso"},
+            {fecha_inicio:"2015-07-01", fecha_asignada:"2015-07-01", empleo:"TN", descripcion:"Teniente de Navío", observaciones:"Ascenso"}
+        ],
+        destinos:[
+            {fecha_inicio:"2024-09-01", fecha_cese:"", destino:"F-101", puesto:"22919", funcion:"OFICIAL DE OPERACIONES"},
+            {fecha_inicio:"2021-09-01", fecha_cese:"2024-08-31", destino:"ARSENAL DE FERROL", puesto:"22917", funcion:"JEFE SECCIÓN MANTENIMIENTO"}
+        ],
+        titulos:["PRL"],
+        aptitudes:["OTAN"],
+        idiomas:["EN - SLP 3333","FR - SLP 2222"],
+        ecom:["TCI"],
+        ipec:[
+            {fecha_inicio:"2024-07-01", fecha_fin:"2025-06-30", empleo:"CF.(EOF)", destino:"FRAGATA ALVARO DE BAZAN", alerta:"", nota:"8,60", dt:""}
+        ]
+    }
+};
+
+let modoEdicion = false;
+let personalActual = null;
+
+function switchTab(event, tabId) {
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+function toggleAcc(header) {
+    header.parentElement.classList.toggle('active');
+}
+
+function fmtFecha(v) {
+    if (!v) return '';
+    const [y,m,d] = v.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+function setVal(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.value = val || '';
+}
+
+function renderBadges(containerId, values, cls='badge-ok') {
+    const el = document.getElementById(containerId);
+    el.innerHTML = (values || []).map(v => `<span class="badge ${cls}">${v}</span>`).join(' ');
+}
+
+function renderTabla(id, filasHtml) {
+    document.getElementById(id).innerHTML = filasHtml;
+}
+
+function cargarFicha(data) {
+    personalActual = JSON.parse(JSON.stringify(data));
+
+    setVal('dni', data.dni);
+    setVal('numero_escalafon', data.numero_escalafon);
+    setVal('fecha_nacimiento', fmtFecha(data.fecha_nacimiento));
+    setVal('nombre', data.nombre);
+    setVal('primer_apellido', data.primer_apellido);
+    setVal('segundo_apellido', data.segundo_apellido);
+    setVal('cod_empleo', data.cod_empleo);
+    setVal('cod_escala', data.cod_escala);
+    setVal('cod_cuerpo', data.cod_cuerpo);
+    setVal('fecha_ascenso', fmtFecha(data.fecha_ascenso));
+    setVal('cargo', data.cargo);
+    setVal('codigo_puesto', data.codigo_puesto);
+    setVal('cod_especialidad_fundamental', data.cod_especialidad_fundamental);
+    setVal('destino', data.destino);
+    setVal('codigo_unidad', data.codigo_unidad);
+    setVal('provincia_res', data.provincia_res);
+    setVal('localidad_res', data.localidad_res);
+
+    renderTabla('tabla-empleos', data.empleos.map(r => `
+        <tr><td>${fmtFecha(r.fecha_inicio)}</td><td>${fmtFecha(r.fecha_asignada)}</td><td>${r.empleo}</td><td>${r.descripcion}</td><td>${r.observaciones || ''}</td></tr>
+    `).join(''));
+
+    renderTabla('tabla-destinos', data.destinos.map(r => `
+        <tr><td>${fmtFecha(r.fecha_inicio)}</td><td>${r.fecha_cese ? fmtFecha(r.fecha_cese) : ''}</td><td>${r.destino}</td><td>${r.puesto}</td><td>${r.funcion}</td></tr>
+    `).join(''));
+
+    renderBadges('titulos-wrap', data.titulos, 'badge-ok');
+    renderBadges('aptitudes-wrap', data.aptitudes, 'badge-aux');
+    renderBadges('idiomas-wrap', data.idiomas, 'badge-ok');
+    renderBadges('ecom-wrap', data.ecom, 'badge-aux');
+
+    renderTabla('tabla-ipec', data.ipec.map(r => `
+        <tr><td>${fmtFecha(r.fecha_inicio)}</td><td>${fmtFecha(r.fecha_fin)}</td><td>${r.empleo}</td><td>${r.destino}</td><td>${r.alerta || ''}</td><td>${r.nota || ''}</td><td>${r.dt || ''}</td></tr>
+    `).join(''));
+}
+
+function editarPersonal() {
+    modoEdicion = true;
+    document.querySelectorAll('.accordion-item').forEach((item, index) => {
+        if (index === 0) item.classList.add('active');
+    });
+    document.getElementById('btn-editar').style.display = 'none';
+    document.getElementById('btn-guardar').style.display = 'inline-block';
+
+    ['cargo','codigo_puesto','cod_especialidad_fundamental','destino','codigo_unidad','provincia_res','localidad_res'].forEach(id => {
+        const el = document.getElementById(id);
+        el.readOnly = false;
+        el.classList.remove('input-readonly');
+        el.classList.add('input-edit');
+    });
+}
+
+function guardarPersonal() {
+    document.getElementById('custom-confirm').style.display = 'flex';
+}
+
+function cerrarConfirm(aceptar) {
+    document.getElementById('custom-confirm').style.display = 'none';
+    if (aceptar) ejecutarGuardadoReal();
+}
+
+function ejecutarGuardadoReal() {
+    if (!personalActual) return;
+    ['cargo','codigo_puesto','cod_especialidad_fundamental','destino','codigo_unidad','provincia_res','localidad_res'].forEach(id => {
+        personalActual[id] = document.getElementById(id).value;
+    });
+
+    PERSONAL_DATA[String(personalActual.id)] = JSON.parse(JSON.stringify(personalActual));
+    modoEdicion = false;
+    cargarFicha(personalActual);
+
+    ['cargo','codigo_puesto','cod_especialidad_fundamental','destino','codigo_unidad','provincia_res','localidad_res'].forEach(id => {
+        const el = document.getElementById(id);
+        el.readOnly = true;
+        el.classList.remove('input-edit');
+        el.classList.add('input-readonly');
+    });
+
+    document.getElementById('btn-editar').style.display = 'inline-block';
+    document.getElementById('btn-guardar').style.display = 'none';
+}
+
+function volverABusqueda() {
+    if (document.referrer.includes('busqueda_personal.html')) {
+        window.history.back();
+    } else {
+        window.location.href = 'busqueda_personal.html';
+    }
+}
+
+function abrirAyuda() {
+    alert('La ficha se organiza en pestañas y acordeones. Use Editar para activar la edición de los campos operativos.');
+}
+
+window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('id') || '1';
+    const data = PERSONAL_DATA[id] || PERSONAL_DATA['1'];
+    cargarFicha(data);
+};
+</script>
+</body>
+</html>

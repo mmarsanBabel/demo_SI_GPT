@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Puestos de Trabajo - Armada Española</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    /* 1. VARIABLES Y RESET */
+    :root { 
+        --navy: #003366; 
+        --navy-light: #004a8d; 
+        --bg-light: #f1f5f9; 
+        --border: #cbd5e1; 
+    }
+
+	html, body {
+    /* Permitimos scroll solo aquí dentro */
+    height: auto; 
+    min-height: 100%;
+    overflow-y: hidden; 
+    overflow-x: hidden;
+    background-color: var(--bg-light);
+	font-family: 'Segoe UI', sans-serif;
+    margin: 0; padding: 0; color: #333; font-size: 13px;
+}
+
+/* Si tienes un contenedor principal dentro del iframe, asegúrate de que no tenga alturas fijas */
+.main-content {
+    height: auto;
+}
+
+    /* 2. TOOLBAR UNIFICADA */
+    .main-toolbar {
+        display: flex; align-items: center; justify-content: space-between;
+        margin: 20px; background: white; padding: 15px 20px;
+        border-radius: 4px; border-bottom: 2px solid var(--navy);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .toolbar-title {
+        color: var(--navy); font-size: 18px; font-weight: bold;
+        text-transform: uppercase; letter-spacing: 1px;
+    }
+
+    .toolbar-buttons { display: flex; gap: 8px; }
+
+	.btn-tool {
+		background: none;
+		border: none;
+		padding: 10px 16px;
+		font-size: 15px;
+		font-weight: 600;
+		color: var(--navy);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		transition: all 0.2s;
+	}	
+	
+    .btn-tool:hover { background: rgba(0, 51, 102, 0.05); }
+    .btn-tool i { font-size: 22px; }
+
+    /* 3. ACORDEONES */
+    .accordion-container { margin: 0 20px; }
+    .accordion-item { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 4px; overflow: hidden; background: white; }
+    .accordion-header { 
+        background-color: var(--navy-light); color: white; padding: 10px 15px; 
+        cursor: pointer; display: flex; align-items: center; font-size: 13px; font-weight: bold; 
+    }
+    .accordion-header i.chevron { margin-right: 10px; transition: transform 0.3s; font-size: 10px; }
+    .accordion-item.active .accordion-header i.chevron { transform: rotate(90deg); }
+    .accordion-content { 
+        display: none; padding: 20px; background: white; 
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; 
+    }
+    .accordion-item.active .accordion-content { display: grid; }
+
+    /* 4. FORMULARIOS E INPUTS */
+    .filter-group { display: flex; flex-direction: column; }
+    .filter-group label { 
+        display: block; margin-bottom: 4px; font-weight: bold; 
+        color: var(--navy); font-size: 11px; text-transform: uppercase; 
+    }
+    .input-text, select { 
+        width: 100%; height: 28px; padding: 4px 8px; font-size: 12px; 
+        box-sizing: border-box; border: 1px solid var(--border); border-radius: 4px; 
+    }
+    .multiselect-box { 
+        height: 100px; overflow-y: auto; border: 1px solid var(--border); 
+        background: #f8fafc; padding: 5px; border-radius: 4px;
+    }
+    .option-item { display: flex; align-items: center; padding: 2px 0; font-size: 11px; }
+
+    /* 5. ÁREA DE RESULTADOS Y TABLA (Consolidado) */
+    .results-container {
+        margin: 20px; background-color: white; border: 1px solid var(--border);
+        border-radius: 8px; padding: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        display: none; 
+    }
+
+    .results-area .toolbar-title {
+        font-size: 16px; margin-bottom: 15px; color: var(--navy); font-weight: bold;
+    }
+
+    #mainTable {
+        width: 100%; border-collapse: collapse; font-size: 14px; margin-top: 10px;
+    }
+
+    #mainTable th {
+        background-color: #f8fafc; color: var(--navy); padding: 12px 10px;
+        text-align: left; border-bottom: 2px solid var(--border);
+        font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    #mainTable td {
+        padding: 12px 10px; border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle; color: #334155;
+    }
+
+    #mainTable tbody tr:hover { background-color: #f1f5f9; }
+    #mainTable th i { margin-left: 8px; font-size: 12px; color: #94a3b8; }
+
+    /* 6. OTROS BOTONES Y PAGINACIÓN */
+    .btn-view {
+        background: none; border: 1px solid var(--navy); color: var(--navy);
+        padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: bold;
+    }
+    .btn-view:hover { background: var(--navy); color: white; }
+
+    .pagination { display: flex; justify-content: center; gap: 5px; padding-top: 20px; }
+    .page-btn { 
+        padding: 5px 12px; border: 1px solid var(--border); background: white; 
+        cursor: pointer; border-radius: 4px; color: var(--navy); font-weight: bold;
+    }
+    .page-btn.active { background: var(--navy); color: white; border-color: var(--navy); }
+</style>
+</head>
+<body>
+
+	<div class="main-toolbar">
+		<div class="toolbar-title">PROVISIONES DE VACANTES</div>
+
+		<div class="toolbar-buttons">
+			<button class="btn-tool" onclick="ejecutarBusqueda()">
+				<i class="fas fa-search"></i> Buscar
+			</button>			
+			
+			<button class="btn-tool" onclick="resetFiltros()">
+				<i class="fas fa-eraser"></i> Limpiar
+			</button>		
+			
+			<button class="btn-tool" onclick="location.reload()">
+				<i class="fas fa-sync-alt"></i> Recargar
+			</button>
+
+			<button class="btn-tool" onclick="abrirAyuda()">
+				<i class="fas fa-question-circle"></i> Ayuda
+			</button>
+		</div>
+	</div>
+
+    <div id="filtros">
+        <div class="accordion-item active">
+            <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> IDENTIFICACIÓN</div>
+            <div class="accordion-content">
+                <div class="filter-group"><label>Cód. Provisión</label><input type="text" id="fProv" class="input-text"></div>
+                <div class="filter-group"><label>Cód. Puesto</label><input type="text" id="fPto" class="input-text"></div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> LOCALIZACIÓN GEOGRÁFICA</div>
+            <div class="accordion-content">
+                <div class="filter-group">
+                    <label>Provincia</label>
+                    <select id="selProv" onchange="cargarLocs()">
+                        <option value="">-- Seleccione Provincia --</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Localidad</label>
+                    <select id="selLoc">
+                        <option value="">-- Seleccione Localidad --</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> EMPLEO, CUERPO Y ESCALA</div>
+            <div class="accordion-content">
+                <div class="filter-group"><label>Empleo</label><div class="multiselect-box" id="boxEmp"></div></div>
+                <div class="filter-group"><label>Cuerpo</label><div class="multiselect-box" id="boxCue"></div></div>
+                <div class="filter-group"><label>Escala</label><div class="multiselect-box" id="boxEsc"></div></div>
+            </div>
+        </div>
+
+        <div class="accordion-item">
+            <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> ECOM Y TÍTULOS</div>
+            <div class="accordion-content">
+                <div class="filter-group"><label>ECOM</label><div class="multiselect-box" id="boxEcom"></div></div>
+                <div class="filter-group"><label>Títulos</label><div class="multiselect-box" id="boxTit"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="results-area">
+		<div class="toolbar-title">RESULTADO PROVISIONES DE VACANTE</div>
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th onclick="ordenar('codigo_busqueda')">CÓDIGO <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('nombre')">DENOMINACIÓN <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('localidad')">LOCALIDAD <i class="fas fa-sort"></i></th>
+                     <th onclick="ordenar('empleo')">EMPLEO <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('cuerpo')">CUERPO <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('funcion')">FUNCIÓN <i class="fas fa-sort"></i></th>
+                </tr>
+            </thead>
+            <tbody id="resBody"></tbody>
+        </table>
+        <div class="pagination" id="pagDiv"></div>
+    </div>
+
+    <script>
+        const PROVINCIAS = {3:"ALICANTE",4:"ALMERIA",7:"ILLES BALEARS",8:"BARCELONA",11:"CADIZ",13:"CIUDAD REAL",15:"A CORUÑA",17:"GIRONA",20:"GIPUZKOA",21:"HUELVA",28:"MADRID",29:"MALAGA",30:"MURCIA",33:"ASTURIAS",35:"PALMAS, LAS",36:"PONTEVEDRA",38:"STA CRUZ TENERIFE",39:"CANTABRIA",41:"SEVILLA",43:"TARRAGONA",46:"VALENCIA",48:"BIZKAIA",51:"CEUTA",52:"MELILLA"};
+        
+        const LOCALIDADES = [
+            {id:3001,n:"GUARDAMAR DEL SEGURA",p:3},{id:3002,n:"ALICANTE",p:3},{id:4001,n:"ALMERIA",p:4},{id:7001,n:"PALMA",p:7},{id:7002,n:"SOLLER",p:7},{id:7003,n:"MAHON",p:7},{id:7004,n:"EIVISSA",p:7},{id:8001,n:"BARCELONA",p:8},{id:11001,n:"SAN FERNANDO",p:11},{id:11002,n:"ROTA",p:11},{id:11003,n:"PUERTO REAL",p:11},{id:11004,n:"CHICLANA DE LA FRONTERA",p:11},{id:11005,n:"CADIZ",p:11},{id:11006,n:"BARBATE",p:11},{id:11007,n:"ALGECIRAS",p:11},{id:11008,n:"TARIFA",p:11},{id:13001,n:"VISO DEL MARQUES",p:13},{id:15001,n:"FERROL",p:15},{id:15002,n:"SANTIAGO DE COMPOSTELA",p:15},{id:15003,n:"A CORUÑA",p:15},{id:17001,n:"ROSES",p:17},{id:20001,n:"HONDARRIBIA",p:20},{id:20002,n:"SAN SEBASTIAN",p:20},{id:21001,n:"HUELVA",p:21},{id:21002,n:"AYAMONTE",p:21},{id:28001,n:"MADRID",p:28},{id:28002,n:"SANTORCAZ",p:28},{id:28003,n:"VALDILECHA",p:28},{id:28004,n:"TORREJON DE ARDOZ",p:28},{id:29001,n:"MALAGA",p:29},{id:30001,n:"CARTAGENA",p:30},{id:30002,n:"MURCIA",p:30},{id:33001,n:"GIJON",p:33},{id:35001,n:"PALMAS DE GRAN CANARIA",p:35},{id:35002,n:"ARRECIFE",p:35},{id:35003,n:"PUERTO DEL ROSARIO",p:35},{id:36001,n:"MARIN",p:36},{id:36002,n:"PONTEVEDRA",p:36},{id:36003,n:"VIGO",p:36},{id:36004,n:"TUY",p:36},{id:38001,n:"SANTA CRUZ DE TENERIFE",p:38},{id:38002,n:"S/C DE LA PALMA",p:38},{id:38003,n:"SAN SEBASTIAN DE LA GOMERA",p:38},{id:38004,n:"VALVERDE DE EL HIERRO",p:38},{id:39001,n:"SANTANDER",p:39},{id:41001,n:"SEVILLA",p:41},{id:43001,n:"TARRAGONA",p:43},{id:46001,n:"VALENCIA",p:46},{id:48001,n:"BILBAO",p:48},{id:51001,n:"CEUTA",p:51},{id:52001,n:"MELILLA",p:52}
+        ];
+        
+		const MASTER_DATA = [
+			{codigo_busqueda:22055, nombre:"COLEGIO JUAN SEBASTIÁN ELCANO", localidad:"PONTEVEDRA", provincia:"PONTEVEDRA", empleo:"CF", cuerpo:"CGA", funcion:"DIRECTOR", asig:"LDZV"},
+			{codigo_busqueda:22059, nombre:"CDSCA-FERROL", localidad:"FERROL", provincia:"A CORUÑA", empleo:"CN-COR", cuerpo:"CGA-IM", funcion:"DIRECTOR GERENTE", asig:"LDZV"},
+			{codigo_busqueda:22269, nombre:"JAL-DIC", localidad:"MADRID", provincia:"MADRID", empleo:"CN", cuerpo:"CGA", funcion:"JEFE OFICINA CERTIFICACION", asig:"LDZV"},
+			{codigo_busqueda:22288, nombre:"JAL-DIC", localidad:"MADRID", provincia:"MADRID", empleo:"CF-CC", cuerpo:"CGA", funcion:"SECRETARIO OAD", asig:"LDXV"},
+			{codigo_busqueda:22345, nombre:"DIGEC", localidad:"MADRID", provincia:"MADRID", empleo:"COR", cuerpo:"IM", funcion:"ASESOR", asig:"LDZV"},
+			{codigo_busqueda:22410, nombre:"DISOS-SUBDAT", localidad:"MADRID", provincia:"MADRID", empleo:"COR", cuerpo:"IM", funcion:"JEFE SECCION COORDINACION", asig:"LDDV"},
+			{codigo_busqueda:22413, nombre:"DISOS-SUBDAT", localidad:"MADRID", provincia:"MADRID", empleo:"COR", cuerpo:"IM", funcion:"JEFE SECCION MATERIAL", asig:"LDDV"},
+			{codigo_busqueda:22460, nombre:"DISOS", localidad:"MADRID", provincia:"MADRID", empleo:"CN-COR-CF-TCOL", cuerpo:"CGA-IM-CINA", funcion:"JEFE SECCION TECNICA", asig:"LDCV"},
+			{codigo_busqueda:22917, nombre:"ARFER", localidad:"FERROL", provincia:"A CORUÑA", empleo:"CF", cuerpo:"CGA", funcion:"JIN. JEFE SECCION MANTENIMIENTO", asig:"LDCV"},
+			{codigo_busqueda:22918, nombre:"ARFER", localidad:"FERROL", provincia:"A CORUÑA", empleo:"CF", cuerpo:"CGA", funcion:"AYUDANTE MAYOR", asig:"LDCV"},
+			{codigo_busqueda:22919, nombre:"ARFER", localidad:"FERROL", provincia:"A CORUÑA", empleo:"CF", cuerpo:"CGA", funcion:"OAJ. SECRETARIO", asig:"LDCV"},
+			{codigo_busqueda:22928, nombre:"ARFER", localidad:"FERROL", provincia:"A CORUÑA", empleo:"CF-ING", cuerpo:"CGA", funcion:"JMAN-JEFE RAMO PLATAFORMA", asig:"LDCV"},
+			{codigo_busqueda:22939, nombre:"ARFER", localidad:"FERROL", provincia:"A CORUÑA", empleo:"CF-CC", cuerpo:"CGA", funcion:"JEFE GRUPO APOYO SOST.", asig:"LDCV"},
+			{codigo_busqueda:23718, nombre:"ARDIZ", localidad:"SAN FERNANDO", provincia:"CADIZ", empleo:"TCOL", cuerpo:"IM", funcion:"JAP. JEFE SERV. REPUESTOS", asig:"LDCV"},
+			{codigo_busqueda:26458, nombre:"DAE-OAD", localidad:"MADRID", provincia:"MADRID", empleo:"COR", cuerpo:"IM", funcion:"ASESOR", asig:"LDZV"},
+			{codigo_busqueda:26460, nombre:"DAE-OAD", localidad:"MADRID", provincia:"MADRID", empleo:"TCOL", cuerpo:"IM", funcion:"JEFE SECCIÓN DOCTRINA", asig:"LDDV"},
+			{codigo_busqueda:26547, nombre:"DAE-INTEN CT", localidad:"CARTAGENA", provincia:"MURCIA", empleo:"TCOL", cuerpo:"INT", funcion:"JEFE UNIDAD GESTION ECONOMICA", asig:"LDDV"},
+			{codigo_busqueda:26687, nombre:"ARCART-ENA", localidad:"CARTAGENA", provincia:"MURCIA", empleo:"CF", cuerpo:"CGA", funcion:"AYUDANTE MAYOR", asig:"LDDV"},
+			{codigo_busqueda:27158, nombre:"ARCART-JICO", localidad:"CARTAGENA", provincia:"MURCIA", empleo:"CF-ING", cuerpo:"CGA", funcion:"JEFE SECCIÓN CONSTRUCCIONES", asig:"LDCV"},
+			{codigo_busqueda:27161, nombre:"ARCART-JICO", localidad:"CARTAGENA", provincia:"MURCIA", empleo:"CF-CC", cuerpo:"CGA", funcion:"ICO SISTEMA COMBATE S-80", asig:"LDCV"},
+			{codigo_busqueda:27737, nombre:"INSHIDRO", localidad:"CADIZ", provincia:"CADIZ", empleo:"CF", cuerpo:"CGA", funcion:"HIDROGRAFÍA", asig:"LDCV"},
+			{codigo_busqueda:30473, nombre:"CBA", localidad:"CARTAGENA", provincia:"MURCIA", empleo:"CN", cuerpo:"CGA", funcion:"COMANDANTE", asig:"LDZV"}
+		];
+
+        let filtrados = [...MASTER_DATA];
+        let pag = 1; const tam = 6;
+        let ordenAsc = true;
+
+        function cargarLocs() {
+            const pId = document.getElementById('selProv').value;
+            const s = document.getElementById('selLoc');
+            s.innerHTML = '<option value="">-- Seleccione Localidad --</option>';
+            LOCALIDADES.filter(l => !pId || l.p == pId).forEach(l => {
+                s.innerHTML += `<option value="${l.n}">${l.id} - ${l.n}</option>`;
+            });
+        }
+
+function ejecutarBusqueda() {
+    // 1. CERRAR ACORDEONES (Para ganar espacio y evitar scroll)
+    document.querySelectorAll('.accordion-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // 2. MOSTRAR CONTENEDOR DE RESULTADOS
+    const contenedor = document.querySelector('.results-container');
+    if (contenedor) contenedor.style.display = 'block';
+
+    // 3. CAPTURAR FILTROS SIMPLES
+    const fCodVal = document.getElementById('fProv').value.trim();
+    const locVal = document.getElementById('selLoc').value;
+    const selProv = document.getElementById('selProv');
+    const provText = selProv.selectedIndex > 0 ? selProv.options[selProv.selectedIndex].text.split(' - ')[1] : "";
+
+    // 4. CAPTURAR FILTROS MÚLTIPLES (Checkboxes)
+    const getChecked = (containerId) => {
+        return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
+    };
+
+    const empleosSel = getChecked('boxEmp');
+    const cuerposSel = getChecked('boxCue');
+    const escalasSel = getChecked('boxEsc');
+    const titulosSel = getChecked('boxTit');
+    const ecomsSel   = getChecked('boxEcom');
+
+    // 5. FILTRADO INTEGRAL CON LÓGICA FLEXIBLE (.some + .includes)
+    filtrados = MASTER_DATA.filter(v => {
+        // Filtros básicos
+        const matchCod = !fCodVal || v.codigo_busqueda.toString().includes(fCodVal);
+        const matchLoc = !locVal || v.localidad === locVal;
+        const matchProv = !provText || v.provincia.toUpperCase() === provText.toUpperCase();
+        
+        // Filtros Múltiples Flexibles:
+        // Si el array de seleccionados está vacío (length === 0), devuelve true (no filtra).
+        // Si hay seleccionados, comprueba si AL MENOS UNO (.some) está contenido (.includes) en el campo del registro.
+        
+        const matchEmp = empleosSel.length === 0 || empleosSel.some(sel => (v.empleo || "").includes(sel));
+        const matchCue = cuerposSel.length === 0 || cuerposSel.some(sel => (v.cuerpo || "").includes(sel));
+        const matchEsc = escalasSel.length === 0 || escalasSel.some(sel => (v.escala || "").includes(sel));
+        const matchTit = titulosSel.length === 0 || titulosSel.some(sel => (v.titulo || "").includes(sel));
+        const matchEcom = ecomsSel.length === 0 || ecomsSel.some(sel => (v.ecom || "").includes(sel));
+
+        return matchCod && matchLoc && matchProv && matchEmp && matchCue && matchEsc && matchTit && matchEcom;
+    });
+
+    // 6. REINICIAR PAGINACIÓN Y RENDERIZAR (Muestra solo 6 líneas según tu configuración)
+    pag = 1; 
+    render();
+    
+    // Opcional: subir al principio de los resultados
+    if (contenedor) contenedor.scrollIntoView({ behavior: 'smooth' });
+}
+
+function render() {
+    const ini = (pag - 1) * tam;
+    const res = filtrados.slice(ini, ini + tam);
+    
+    document.getElementById('resBody').innerHTML = res.map(v => `
+        <tr onclick="abrirEdicion('${v.codigo_busqueda}', '${v.nombre}', '${v.localidad}', '${v.provincia}', '${v.funcion}')" 
+            style="cursor:pointer;" class="row-hover">
+            <td><b>${v.codigo_busqueda}</b></td>
+            <td>${v.nombre}</td>
+            <td>${v.localidad}</td>
+            <td>${v.empleo}</td>
+            <td>${v.cuerpo || ''}</td> <td>${v.funcion}</td>
+        </tr>
+    `).join('');
+    
+    // Dibujar paginación (tu código actual)
+    const total = Math.ceil(filtrados.length / tam);
+    let h = ''; 
+    for(let i=1; i<=total; i++) {
+        h += `<button class="page-btn ${i==pag?'active':''}" onclick="paginar(${i})">${i}</button>`;
+    }
+    document.getElementById('pagDiv').innerHTML = h;
+}
+
+// 3. La función de apertura (Asegúrate de que esté justo después de render)
+function abrirEdicion(ciu, unor, localidad, provincia, funcion) {
+    const params = new URLSearchParams({ ciu, unor, localidad, provincia, funcion });
+    const urlDestino = `mantenimiento_vacantes.html?${params.toString()}`;
+    
+    try {
+        // Intentamos ver si el padre es accesible y tiene la función
+        if (window.parent && window.parent !== window) {
+            // El 'try' atrapará el error de seguridad aquí
+            if (typeof window.parent.navegarA === 'function') {
+                window.parent.navegarA(urlDestino);
+                return; // Si funciona, salimos
+            }
+        }
+    } catch (e) {
+        console.warn("Acceso al padre bloqueado por seguridad (CORS). Abriendo en la ventana actual.");
+    }
+
+    // Si falla lo anterior (por seguridad o porque no hay padre), abrimos normal
+    window.location.href = urlDestino;
+}
+		
+		function seleccionarProvision(ciu, unor, funcion) {
+			// Construimos la URL con los parámetros que queremos pasar
+			// Usamos encodeURIComponent para evitar problemas con espacios o tildes
+			const urlDestino = `mantenimiento_vacantes.html?ciu=${ciu}&unor=${encodeURIComponent(unor)}&funcion=${encodeURIComponent(funcion)}`;
+			
+			// Llamamos a la función 'navegarA' que está en el padre (mantenimiento_habilidades.html)
+			if (window.parent && window.parent.navegarA) {
+				window.parent.navegarA(urlDestino);
+			} else {
+				// Por si acaso la página se abre fuera del frame principal
+				window.location.href = urlDestino;
+			}
+		}		
+
+        function paginar(p) { pag = p; render(); }
+
+        function ordenar(campo) {
+            filtrados.sort((a, b) => {
+                let vA = a[campo].toString().toLowerCase();
+                let vB = b[campo].toString().toLowerCase();
+                return ordenAsc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+            });
+            ordenAsc = !ordenAsc; render();
+        }
+
+function resetFiltros() { 
+    // 1. Limpiar todos los inputs de texto (Código de búsqueda, etc.)
+    document.querySelectorAll('input[type="text"]').forEach(i => i.value = ""); 
+
+    // 2. Desmarcar todos los checkboxes de los selectores múltiples
+    document.querySelectorAll('.option-item input[type="checkbox"]').forEach(i => i.checked = false);
+
+    // 3. Reiniciar selectores de Provincia y Localidad
+    document.getElementById('selProv').value = "";
+    cargarLocs(); // Esto vacía el selector de localidades al no haber provincia
+
+    // 4. Cerrar todos los acordeones para limpiar la interfaz
+    document.querySelectorAll('.accordion-item').forEach(item => {
+        item.classList.remove('active');
+    });
+
+    // 5. Ocultar el contenedor de resultados y vaciar la lista
+    const contenedor = document.querySelector('.results-container');
+    if (contenedor) {
+        contenedor.style.display = 'none'; // Oculta la tabla
+    }
+    
+    document.getElementById('resBody').innerHTML = ""; // Vacía las filas de la tabla
+    document.getElementById('pagDiv').innerHTML = "";  // Vacía la paginación
+
+    // 6. Resetear las variables de control de la búsqueda
+    filtrados = [...MASTER_DATA];
+    pag = 1;
+
+    // Opcional: Volver al inicio de la página suavemente
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+        window.onload = () => {
+            // Cargar Provincias
+            const pS = document.getElementById('selProv');
+            Object.entries(PROVINCIAS).forEach(([id, n]) => pS.innerHTML += `<option value="${id}">${id} - ${n}</option>`);
+            
+            // Función para llenar cajas multiselect con "Código - Descripción"
+            const fillMulti = (id, obj) => {
+                const box = document.getElementById(id);
+                Object.entries(obj).forEach(([cod, desc]) => {
+                    box.innerHTML += `<div class="option-item"><input type="checkbox" value="${cod}"><span>${cod} - ${desc}</span></div>`;
+                });
+            };
+
+            // Datos para los selectores múltiples
+            const empleos = {"CN":"Capitán de Navío","COR":"Coronel","CF":"Capitán de Fragata","TCOL":"Teniente Coronel","CC":"Capitán de Corbeta"};
+            const cuerpos = {"CGA":"Cuerpo General Armada","IM":"Infantería de Marina","CINA":"Cuerpo de Ingenieros Armada","ING":"Ingenieros"};
+            const escalas = {"EOF":"Escala de Oficiales","ESO":"Escala de Suboficiales","ESB":"Escala de Tropa y Marinería"};
+            const ecoms = {"TCI":"Tácticas y Comunicaciones","TI":"Tecnologías Información","IH":"Hidrografía"};
+            const titulos = {"EMFAS":"Estado Mayor Fuerzas Armadas","PRL":"Prevención Riesgos Laborales","E2TLG":"Especialista Telemática"};
+
+            fillMulti('boxEmp', empleos);
+            fillMulti('boxCue', cuerpos);
+            fillMulti('boxEsc', escalas);
+            fillMulti('boxEcom', ecoms);
+            fillMulti('boxTit', titulos);
+
+            //render();
+        };
+		
+    </script>
+	
+<div id="contenedor-embebido" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:white; z-index:1000;">
+    <div class="main-toolbar">
+        <div class="toolbar-title">Editando Provisión</div>
+        <button class="btn-tool" onclick="cerrarEdicion()" style="color: #dc3545;">
+            <i class="fas fa-times"></i> Volver a la búsqueda
+        </button>
+    </div>
+    <iframe id="frame-mantenimiento" src="" style="width:100%; height:calc(100% - 60px); border:none;"></iframe>
+</div>	
+</body>
+</html>

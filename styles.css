@@ -1,0 +1,236 @@
+:root{
+  --azul-oscuro-gob:#003366;
+  --azul-principal:#004481;
+  --azul-menu-hover:#0055a5;
+  --dorado-gob:#febd11;
+  --verde-alta:#28a745;
+  --rojo-baja:#dc3545;
+  --azul-mod:#007bff;
+  --gris-fondo:#f4f4f4;
+  --gris-borde:#ced4da;
+  --shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* 1. Bloqueamos el scroll del navegador */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* <--- OBLIGATORIO: Elimina el scroll del padre */
+}
+
+/* 2. El contenedor ocupa exactamente el alto visual de la pantalla */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; /* Altura total de la ventana */
+}
+
+/* 3. El MAIN ocupa el espacio que deja el Header sin pasarse */
+main {
+    flex-grow: 1; /* Toma todo lo que sobra bajo el header */
+    overflow: hidden; /* No permite que el contenido "empuje" hacia abajo */
+    display: flex; /* Cambiado a flex para que .card-full se estire correctamente */
+    flex-direction: column;
+    position: relative;
+}
+
+/* 4. Tarjeta normal (formularios) con su propio scroll si es muy larga */
+.card {
+  background: #fff;
+  padding: 30px;
+  border-radius: 10px;
+  box-shadow: var(--shadow);
+  width: 95%;
+  max-width: 1000px;
+  margin: 20px 0 20px 0; /* Un poco de margen superior */
+  box-sizing: border-box;
+  overflow-y: auto; /* Si el formulario es largo, scrollea la tarjeta, no la página */
+  max-height: 90%; 
+}
+
+/* 5. SECCIÓN FULL (Iframes) */
+.card-full {
+  width: 100% !important;
+  max-width: none !important;
+  height: 100% !important; /* Ocupa el 100% del MAIN */
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+  display: none; 
+  flex-grow: 1; /* Fuerza el estirado */
+}
+
+.card-full.active {
+    display: flex; /* Activamos como flex para el iframe */
+}
+
+/* 6. El IFRAME debe tener permiso para scrollear */
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+}
+
+/* 4. El iframe debe expandirse totalmente */
+iframe {
+    width: 100%;
+    height: 95% !important;    /* Ocupa todo el alto del main */
+    border: none;
+    overflow: hidden;   /* Desactivamos el scroll visual del iframe */
+}
+
+/* Estilo específico para la página de mantenimiento de habilidades */
+body.mantenimiento-habilidades {
+    background-image: url('./img/fondo_profesional.png'); /* Ruta relativa a la imagen */
+    background-size: cover; /* Cubre toda la pantalla */
+    background-position: center; /* Centra la imagen */
+    background-repeat: no-repeat; /* No repite la imagen */
+    background-attachment: fixed; /* El fondo se queda fijo al hacer scroll (opcional) */
+}
+
+*{box-sizing:border-box}
+body{
+  font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;
+  margin:0; display:flex; flex-direction:column; height:100vh;
+  background:var(--gris-fondo); overflow:hidden;
+  background-image: url('./img/fondo_profesional.png'); /* Ruta relativa a la imagen */
+    background-size: cover; /* Cubre toda la pantalla */
+    background-position: center; /* Centra la imagen */
+    background-repeat: no-repeat; /* No repite la imagen */
+    background-attachment: fixed; /* El fondo se queda fijo al hacer scroll (opcional) */
+}
+
+/* Header */
+header{
+  background:var(--azul-oscuro-gob); color:#fff; padding:10px 30px;
+  box-shadow:0 2px 10px rgba(0,0,0,0.3); z-index:100;
+}
+.header-top{display:flex;justify-content:space-between;align-items:center;min-height:90px;gap:12px}
+.logo-container{width:225px;display:flex;align-items:center}
+.logo-container.logo-right{justify-content:flex-end}
+.header-logo{max-height:82px;width:auto;object-fit:contain}
+.header-title-center{flex-grow:1;text-align:center;font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:1px}
+.user-data{
+  font-size:12px;color:#bdc3c7;border-top:1px solid rgba(255,255,255,0.1);
+  margin-top:5px;padding-top:5px;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;
+}
+.user-actions{display:flex;gap:10px;align-items:center}
+.link-btn{
+  background:transparent;border:1px solid rgba(255,255,255,0.25);color:#fff;
+  padding:6px 10px;border-radius:6px;cursor:pointer;font-weight:700;font-size:12px;
+}
+.link-btn:hover{border-color:rgba(255,255,255,0.5)}
+
+/* Layout */
+.wrapper{display:flex;flex:1;overflow:hidden}
+nav{
+  width:280px;background:var(--azul-principal);color:#fff;
+  box-shadow:2px 0 5px rgba(0,0,0,0.1)
+}
+.nav-root{padding:20px;background:#002a52;font-weight:800;display:flex;align-items:center;gap:10px}
+.submenu-item{
+  padding:15px 20px;border-bottom:1px solid rgba(255,255,255,0.05);
+  cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:10px;
+}
+.submenu-item:hover{background:var(--azul-menu-hover)}
+.submenu-item.active{background:var(--azul-menu-hover);border-left:5px solid var(--dorado-gob)}
+main{flex:1;padding:30px;overflow-y:auto}
+
+/* Card */
+
+
+.card-header{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:25px;
+  border-bottom:2px solid #eee;padding-bottom:15px;gap:10px;flex-wrap:wrap;
+}
+h1{margin:0;font-size:22px;color:var(--azul-oscuro-gob)}
+.field-group{margin-bottom:20px}
+label{
+  display:block;font-weight:800;font-size:11px;color:#555;text-transform:uppercase;
+  margin-bottom:8px;letter-spacing:0.5px;
+}
+select,input[type="text"],textarea{
+  width:100%;padding:12px;border:1px solid var(--gris-borde);border-radius:6px;
+  font-size:14px;background:#fdfdfd;
+}
+textarea{height:100px;resize:none;font-family:inherit}
+select:disabled,textarea:disabled{background:#f0f2f5;cursor:not-allowed}
+
+/* Buttons */
+.icon-actions{display:flex;gap:10px;flex-wrap:wrap}
+.btn-action{
+  background:#fff;border:2px solid #ddd;padding:8px 14px;border-radius:6px;
+  cursor:pointer;font-weight:900;transition:0.15s;font-size:13px;
+}
+.btn-add{color:var(--verde-alta);border-color:var(--verde-alta)}
+.btn-add:hover:not(:disabled){background:var(--verde-alta);color:#fff}
+.btn-edit{color:var(--azul-mod);border-color:var(--azul-mod)}
+.btn-edit:hover:not(:disabled){background:var(--azul-mod);color:#fff}
+.btn-delete{color:var(--rojo-baja);border-color:var(--rojo-baja)}
+.btn-delete:hover:not(:disabled){background:var(--rojo-baja);color:#fff}
+.btn-action:disabled{opacity:0.35;cursor:not-allowed}
+
+.edit-container{
+  background:#f0f7ff;border:1px solid #cce5ff;padding:15px;border-radius:8px;margin-top:10px;
+}
+.edit-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.edit-row input,.edit-row textarea{flex:1;min-width:240px}
+.edit-icons{display:flex;gap:8px}
+.btn-circle{
+  width:40px;height:40px;border-radius:8px;border:1px solid #ddd;background:#fff;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;transition:0.15s;font-size:16px;
+}
+.btn-circle.save{color:var(--verde-alta);border-color:var(--verde-alta)}
+.btn-circle.save:hover{background:var(--verde-alta);color:#fff}
+.btn-circle.cancel{color:var(--rojo-baja);border-color:var(--rojo-baja)}
+.btn-circle.cancel:hover{background:var(--rojo-baja);color:#fff}
+
+.hidden{display:none !important}
+
+/* Modal */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(0,0,0,0.5);
+  display:flex; justify-content:center; align-items:center; z-index:1000;
+  visibility:hidden; opacity:0; transition:0.2s;
+}
+.modal-overlay.active{visibility:visible;opacity:1}
+.modal-content{background:#fff;width:min(520px,92vw);border-radius:12px;overflow:hidden;box-shadow:0 10px 30px rgba(0,0,0,0.25)}
+.modal-header{background:var(--azul-oscuro-gob);color:#fff;padding:15px 18px;font-weight:900}
+.modal-body{padding:18px;font-size:15px;line-height:1.4}
+.modal-footer{padding:14px 18px;border-top:1px solid #eee;display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap}
+.small{font-size:12px;color:#666}
+.toast{
+  position:fixed; left:50%; transform:translateX(-50%);
+  bottom:18px; background:#111; color:#fff; padding:10px 12px; border-radius:10px;
+  opacity:0; pointer-events:none; transition:0.2s; font-size:13px;
+}
+.toast.show{opacity:0.92}
+
+/* Login helpers (offline icons) */
+.input-with-icon{position:relative;display:flex;align-items:center}
+.input-with-icon .icon{position:absolute;left:12px;font-size:16px;opacity:.8}
+.input-with-icon input{padding-left:40px}
+.login-hint{margin-top:14px;font-size:12px;color:#666;line-height:1.4;text-align:center}
+
+.descripcion-title {
+  color: white;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Acordeón suave */
+.accordion-body {
+  overflow: hidden;
+  transition: max-height 0.5s ease, opacity 0.3s ease;
+  max-height: 1000px; /* valor alto suficiente */
+  opacity: 1;
+}
+
+.accordion-body.closed {
+  max-height: 0;
+  opacity: 0;
+}

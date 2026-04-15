@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mantenimiento de Provisiones de Vacante</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+/* 1. VARIABLES GLOBALES */
+:root { 
+    --navy: #003366; 
+    --navy-light: #004a8d; 
+    --bg-light: #f1f5f9; 
+    --border: #cbd5e1; 
+    --soft-red: #f87171; 
+    --amber: #f59e0b;
+    --shadow: 0 4px 15px rgba(0,0,0,0.05);
+}
+
+/* 2. CONFIGURACIÓN DE PANTALLA */
+html, body {
+    height: 100vh;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    background-color: var(--bg-light);
+    color: #333;
+    font-size: 13px;
+    overflow: hidden; 
+}
+
+body {
+    display: flex;
+    flex-direction: column; 
+}
+
+/* 3. TOOLBAR FIJA */
+.main-toolbar {
+    flex: 0 0 auto; 
+    background: white;
+    z-index: 1100;
+    padding: 15px 20px;
+    border-bottom: 2px solid var(--navy);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* 4. CONTENEDOR DE SCROLL ÚNICO */
+.main-container {
+    flex: 1;            /* Ocupa todo el alto restante */
+    overflow-y: auto;   /* Permite scroll vertical */
+    overflow-x: hidden;
+    display: block;     /* Fundamental para que las pestañas fluyan normal */
+    width: 100%;
+}
+
+/* 5. TABS (Asegurar horizontalidad total) */
+.tabs-container {
+    display: flex !important;
+    flex-direction: row !important; /* Fuerza horizontal */
+    flex-wrap: nowrap;
+    gap: 5px;
+    margin: 30px 20px 0 20px;
+    border-bottom: 2px solid var(--navy);
+    background-color: transparent;
+}
+
+.tab-button {
+    flex: 0 0 auto;     /* Los botones no se estiran ni se encogen */
+    background-color: #e2e8f0;
+    color: #64748b;
+    border: none;
+    padding: 12px 25px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    border-radius: 8px 8px 0 0;
+    transition: all 0.3s;
+    text-transform: uppercase;
+	display: inline-block !important; /* Fuerza comportamiento horizontal */
+}
+
+
+
+
+/* Contenedor específico para los botones (Evita que se amontonen) */
+.toolbar-buttons {
+    display: flex;             /* Alinea los botones uno al lado del otro */
+    gap: 15px;                 /* Espacio entre botones */
+    align-items: center;
+}
+
+
+.toolbar-title {
+    color: var(--navy);
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* 4. CONTENEDOR PRINCIPAL (Alineado a la izquierda) */
+
+.card {
+    background: #fff;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    width: calc(100% - 40px);
+    max-width: 1400px;
+    /* 20px de separación con las pestañas o la toolbar */
+    margin: 20px 0 20px 20px; 
+    box-sizing: border-box;
+}
+
+
+
+.tab-button.active {
+    background-color: var(--navy);
+    color: white;
+}
+
+/* Ocultar todos los contenidos de pestañas por defecto */
+.tab-content {
+    display: none !important; 
+    visibility: hidden;
+}
+
+/* Mostrar SOLO el contenido que tenga la clase active */
+.tab-content.active {
+    display: block !important;
+    visibility: visible;
+    animation: fadeIn 0.3s; /* Efecto suave opcional */
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+/* Asegura que la tabla sea tratada como tabla */
+#tabla-solicitantes {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+    display: table !important; /* Fuerza el renderizado de la tabla */
+}
+
+/* Estilo para las celdas para asegurar que tengan cuerpo */
+#tabla-solicitantes th, 
+#tabla-solicitantes td {
+	font-size: 16px;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+/* Aumentar el tamaño del icono del botón "Ojo" */
+.btn-tool i {
+    font-size: 18px; 
+}
+
+/* 6. ACORDEONES */
+.accordion-item { 
+    border: 1px solid #ddd; 
+    margin-bottom: 5px; 
+    border-radius: 4px; 
+    overflow: hidden; 
+    background: white; 
+}
+
+.accordion-header { 
+    background-color: var(--navy-light); 
+    color: white; 
+    padding: 10px 15px; 
+    cursor: pointer; 
+    display: flex; 
+    align-items: center; 
+    font-size: 13px; 
+    font-weight: bold; 
+}
+
+.accordion-header i.chevron { margin-right: 10px; transition: transform 0.3s; font-size: 10px; }
+.accordion-item.active .accordion-header i.chevron { transform: rotate(90deg); }
+
+.accordion-content { 
+    display: none; 
+    padding: 15px; 
+    background: white; 
+}
+
+.accordion-item.active .accordion-content { 
+    display: block; 
+    height: auto !important;
+    overflow: visible !important; 
+}
+
+/* 7. FORMULARIOS E INPUTS */
+
+
+.info-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 8px;
+    align-items: flex-end; 
+}
+
+.info-box label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: bold;
+    color: var(--navy);
+    font-size: 11px;
+    text-transform: uppercase;
+}
+
+.info-box input, 
+.info-box select {
+    width: 100%;
+    height: 30px;
+    padding: 4px 8px;
+    font-size: 12px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-sizing: border-box;
+    display: block;
+    line-height: 1.2;
+}
+
+.input-edit {
+    border: 1px solid var(--navy) !important;
+    background-color: white !important;
+}
+
+.input-readonly {
+    background-color: #f8fafc !important;
+    color: #475569;
+    cursor: default;
+    font-weight: 600;
+}
+
+/* 8. GRUPOS RESALTADOS */
+.label-grupo-destacado {
+    background-color: var(--navy);
+    color: white !important;
+    padding: 6px 12px;
+    border-radius: 4px 4px 0 0;
+    display: table;
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    margin-top: 15px;
+}
+
+.grupo-campos-container {
+    border: 1px solid var(--navy); 
+    padding: 15px;
+    border-radius: 0 4px 4px 4px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+}
+
+/* 9. BOTONES DE ACCIÓN */
+
+/* Estilo de los botones para que no colapsen */
+.btn-tool {
+    display: inline-flex;      /* Asegura que el icono y el texto estén alineados */
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;       /* Evita que el texto se rompa en dos líneas */
+	padding: 10px 14px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 15px; font-weight: 600; color: var(--navy);
+
+}
+
+.btn-tool:hover { background: rgba(0, 51, 102, 0.05); border-radius: 4px; }
+
+.btn-delete {
+    background-color: transparent;
+    color: var(--navy);
+    border: 1px solid var(--navy);
+    width: 28px; height: 28px;
+    border-radius: 4px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+}
+
+.btn-delete:hover { background-color: var(--navy); color: white; }
+
+.btn-add {
+    background-color: #E2E8F0;
+    color: black;
+    border: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+/* 10. TABLAS */
+.rel-table { 
+    width: 100%; 
+    border-collapse: collapse; 
+    margin-bottom: 25px; 
+}
+
+.rel-table th { 
+    background: #f8fafc; 
+    text-align: left; 
+    padding: 8px; 
+    border-bottom: 2px solid var(--border); 
+    color: var(--navy); 
+    font-size: 11px; 
+    text-transform: uppercase; 
+}
+
+.rel-table td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; }
+
+/* Fila de detalle (oculta por defecto) */
+.fila-detalle {
+    display: none; /* Se controla por JS */
+    background-color: #fdfdfd;
+}
+
+/* Contenedor interno del detalle */
+.detalle-content {
+    padding: 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Dos columnas: destinos y aptitudes */
+    gap: 20px;
+    border-left: 4px solid var(--navy);
+    margin: 10px;
+    background: #f8fafc;
+    border-radius: 4px;
+}
+
+/* Badges para ECOM y Aptitudes */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: bold;
+    margin-right: 5px;
+    text-transform: uppercase;
+}
+.badge-ecom { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+.badge-apt { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+
+/* Efecto hover en la fila principal */
+tr[onclick="toggleDetalle"] {
+    transition: background 0.2s;
+}
+tr[onclick="toggleDetalle"]:hover {
+    background-color: #f1f5f9;
+}
+
+/* Estilo para la lista de destinos en el detalle */
+.lista-destinos {
+    list-style: none;
+    padding: 0;
+    margin-top: 10px;
+    /* Aumentamos el tamaño aquí */
+    font-size: 14px; 
+    line-height: 1.5;
+    color: #334155;
+}
+
+.lista-destinos li {
+    margin-bottom: 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.lista-destinos b {
+    color: var(--navy);
+    font-weight: 700;
+}
+
+</style>
+</head>
+<body>
+
+
+<div class="main-toolbar">
+    <div class="toolbar-title">PROVISIONES DE VACANTE</div>
+    <div class="toolbar-buttons">
+        <button class="btn-tool" onclick="volverABusqueda()">
+            <i class="fas fa-search"></i> Buscar
+        </button>			
+        <button id="btn-editar" class="btn-tool" onclick="editarVacante()">
+            <i class="fas fa-edit"></i> Editar
+        </button>		
+        <button id="btn-guardar" class="btn-tool" onclick="guardarVacante()" style="display: none;">
+            <i class="fas fa-save"></i> Guardar
+        </button>
+        <button class="btn-tool" onclick="abrirAyuda()">
+            <i class="fas fa-question-circle"></i> Ayuda
+        </button>
+    </div>
+</div>
+
+<div class="main-container">
+    <button class="tab-button active" onclick="switchTab(event, 'datos-vacante')">Datos Vacante</button>
+    <button class="tab-button" onclick="switchTab(event, 'datos-solicitantes')">Datos Solicitantes</button>
+
+    <div id="datos-vacante" class="tab-content active">
+        <div class="accordion-container">
+            
+            <div class="accordion-item active">
+                <div class="accordion-header" onclick="toggleAcc(this)">
+                    <i class="fas fa-chevron-right chevron"></i> 1. DATOS INFORMATIVOS DE LA VACANTE
+                </div>
+                <div class="accordion-content">
+                    <div class="info-container">
+                        <div class="label-grupo-destacado"><i class="fas fa-sitemap"></i> ORGANIZACIÓN ORGÁNICA</div>
+                        <div class="grupo-campos-container">
+                            <div class="info-row">
+                                <div class="info-box" style="flex: 1;"><label>CIU</label><input type="text" id="agg-ciu" class="input-readonly" readonly></div>
+                                <div class="info-box" style="flex: 2;"><label>UNOR (Unidad)</label><input type="text" id="agg-unor" class="input-readonly" readonly></div>
+                            </div>
+                            <div class="info-row">
+                                <div class="info-box" style="flex: 2;"><label>FUNCIÓN</label><input type="text" id="agg-funcion" class="input-readonly" readonly></div>
+                                <div class="info-box" style="flex: 1;"><label>LOCALIDAD</label><input type="text" id="agg-localidad" class="input-readonly" readonly></div>
+                                <div class="info-box" style="flex: 1;"><label>PROVINCIA</label><input type="text" id="agg-provincia" class="input-readonly" readonly></div>
+                            </div>
+                        </div>
+
+                        <div class="label-grupo-destacado"><i class="fas fa-medal"></i> ORGANIZACIÓN JERÁRQUICA</div>
+                        <div class="grupo-campos-container">
+                            <div class="info-row">
+                                <div class="info-box"><label>EMPLEO</label><input type="text" id="agg-tEmp" class="input-readonly" readonly></div>
+                                <div class="info-box"><label>CUERPO</label><input type="text" id="agg-tCue" class="input-readonly" readonly></div>
+                                <div class="info-box"><label>ESCALA</label><input type="text" id="agg-tEsc" class="input-readonly" readonly></div>
+                            </div>
+                        </div>
+
+                        <div class="label-grupo-destacado"><i class="fas fa-comment-alt"></i> OBSERVACIONES</div>
+                        <div class="grupo-campos-container">
+                            <div class="info-row">
+                                <div class="info-box" style="flex: 1;"><label>OBSERVACIONES (CÓDIGOS)</label><input type="text" id="agg-obs" class="input-readonly" readonly></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+                
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAcc(this)">
+                    <i class="fas fa-chevron-right chevron"></i> 2. CONFIGURACIÓN DE EMPLEO, ESCALA Y CUERPO
+                </div>
+                <div class="accordion-content" id="contenedor-empleos-config"></div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAcc(this)">
+                    <i class="fas fa-chevron-right chevron"></i> 3. CONFIGURACIÓN DE CONOCIMIENTOS Y REQUISITOS
+                </div>
+                <div class="accordion-content">
+                    <div id="group-conocimientos"></div>
+                </div>
+            </div>
+
+            <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAcc(this)">
+                    <i class="fas fa-chevron-right chevron"></i> 4. COMPETENCIAS Y EXPERIENCIA
+                </div>
+                <div class="accordion-content" id="group-expertis"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="datos-solicitantes" class="tab-content">
+        <div class="results-container" style="display:block; margin: 0 20px; background: white; padding: 20px; border-radius: 4px;">
+            <div class="toolbar-title" style="font-size: 14px; margin-bottom: 15px; border-bottom: 1px solid #eee; padding-bottom: 10px;">
+                <i class="fas fa-users-rectangle"></i> CANDIDATOS PRESENTADOS A LA VACANTE
+            </div>
+            <table id="tabla-solicitantes">
+                <thead>
+                    <tr>
+                        <th>NOMBRE</th>
+                        <th>EMPLEO</th>
+                        <th>CUERPO</th>
+                        <th>PERFIL RESUMIDO</th>
+                        <th style="text-align: center;">ACCIONES</th>
+                    </tr>
+                </thead>
+                <tbody id="lista-solicitantes-body">
+                </tbody>
+            </table>
+
+            <div id="contenedor-acciones-ranking" style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed var(--border); text-align: center;">
+                <div id="aviso-estilo" style="display:none; margin-bottom: 15px; padding: 10px; border-radius: 4px; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-weight: bold;">
+                    <i class="fas fa-check-circle"></i> <span id="aviso-texto"></span>
+                </div>
+
+                <button id="btn-ranking" class="btn-tool" onclick="calcularRanking(this)" 
+                    style="background-color: var(--navy); color: white; padding: 12px 30px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 12px; font-size: 14px;">
+                    <i class="fas fa-sync-alt" style="color: white;"></i> 
+                    <span>CALCULAR RANKING</span>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>	
+
+
+	<div id="custom-confirm" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:8px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); min-width: 300px;">
+            <h3 style="color:var(--navy); margin-top:0;">¿Confirmar guardado?</h3>
+            <p style="margin-bottom:20px;">Los cambios se aplicarán a la vacante actual.</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="cerrarConfirm(true)" style="background:var(--navy); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">SÍ, GUARDAR</button>
+                <button onclick="cerrarConfirm(false)" style="background:#e2e8f0; color:black; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+	<script src="js/maestras.js"></script>
+	<script src="app.js"></script>
+	<script src="js/provisiones.js"></script>	
+	
+	<script>
+window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    // 1. Intentamos obtener el CIU de la URL o del sessionStorage (si volvemos del panel)
+    let idBusqueda = params.get('ciu') || sessionStorage.getItem('ciu_retorno');
+
+    let baseDatos = window.MAESTRAS?.DDBB_PUESTOS_PILOTO || window.DDBB_PUESTOS_PILOTO;
+
+    if (idBusqueda && baseDatos && baseDatos[idBusqueda]) {
+        rellenarFormulario(baseDatos[idBusqueda]);
+        
+        // 2. Si venimos con tab=2, forzamos el click en la pestaña
+        if (params.get('tab') === '2') {
+            const btnSolicitantes = document.querySelector('[onclick*="datos-solicitantes"]');
+            if (btnSolicitantes) btnSolicitantes.click();
+            
+            // Opcional: Ejecutar ranking automáticamente al volver
+            // calcularRanking();
+        }
+    } else if (params.get('ciu')) {
+        alert("No se encontraron datos para el CIU: " + idBusqueda);
+    }
+    
+    if (typeof cargarSolicitantes === "function") {
+        cargarSolicitantes();
+    }
+};
+
+function rellenarFormulario(d) {
+    console.log("Procesando objeto:", d);
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+    };
+
+    // --- ACORDEÓN 1: DATOS INFORMATIVOS (Sin cambios) ---
+    setVal('agg-ciu', d.codigo_busqueda || d.ciu);
+    setVal('agg-unor', d.unor || d.unidad);
+    setVal('agg-funcion', d.funcion || d.puesto);
+    setVal('agg-localidad', d.localidad);
+    setVal('agg-provincia', d.provincia);
+    
+    const valEmp = d.empleo || d.tEmp || d.emp;
+    const valCue = d.cuerpo || d.tCue || d.cue;
+    const valEsc = d.escala || d.tEsc || d.esc;
+    
+    setVal('agg-tEmp', valEmp);
+    setVal('agg-tCue', valCue);
+    setVal('agg-tEsc', valEsc);
+    setVal('agg-tTit', d.tit_dipl);
+    setVal('agg-tApt', d.apt);
+    setVal('agg-tComp', d.competencias_preferentes);
+    setVal('agg-obs', d.observ);
+
+    const M = window.MAESTRAS || {};
+
+    // --- ACORDEÓN 2: CONFIGURACIÓN EMPLEO (Usa desglosarConEdicion) ---
+    const contAcc2 = document.getElementById('contenedor-empleos-config');
+    if (contAcc2) {
+        contAcc2.innerHTML = "";
+        desglosarConEdicion(valEmp, contAcc2, M.tEmp, 'EMPLEO');
+        desglosarConEdicion(valCue, contAcc2, M.tCue, 'CUERPO');
+        desglosarConEdicion(valEsc, contAcc2, M.tEsc, 'ESCALA');
+    }
+
+    // --- ACORDEÓN 3: CONOCIMIENTOS (Usa desglosarConEdicion) ---
+    const contAcc3 = document.getElementById('group-conocimientos');
+    if (contAcc3) {
+        contAcc3.innerHTML = "";
+        desglosarConEdicion(d.tit_dipl, contAcc3, M.tTit, 'TITULACIÓN');
+        desglosarConEdicion(d.apt, contAcc3, M.tApt, 'APTITUD');
+        desglosarConEdicion(d.EC, contAcc3, M.tEcom, 'ECOM');
+        desglosarConEdicion(d.esp_fun, contAcc3, M.tEspFun, 'ESP. FUNDAMENTAL');
+        desglosarConEdicion(d.idioma, contAcc3, M.tIdio, 'IDIOMA (SLP)');
+        desglosarConEdicion(d.carnet, contAcc3, M.tCar, 'CARNET CONDUCIR');
+        
+        // Para observaciones si quieres que sea editable
+        if (d.observ && d.observ !== "---") {
+            desglosarConEdicion(d.observ, contAcc3, M.tObs, 'OBSERVACIONES');
+        }
+    }
+
+    // --- ACORDEÓN 4: COMPETENCIAS (Usa desglosarConEdicion) ---
+    const contAcc4 = document.getElementById('group-expertis');
+    if (contAcc4) {
+        contAcc4.innerHTML = "";
+        desglosarConEdicion(d.competencias_preferentes, contAcc4, M.tComp, 'COMPETENCIAS');
+        desglosarConEdicion(d.areas_experiencia, contAcc4, M.tExp, 'ÁREAS DE EXPERIENCIA');
+    }
+}
+
+let modoEdicion = false;
+
+function editarVacante() {
+    modoEdicion = true;
+    
+    // 1. Gestionar Acordeones: Cerrar todos y abrir el 4º
+    const items = document.querySelectorAll('.accordion-item');
+    items.forEach((item, index) => {
+        if (index === 3) { // El cuarto (0, 1, 2, 3)
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // 2. Botones
+    document.getElementById('btn-editar').style.display = 'none';
+    document.getElementById('btn-guardar').style.display = 'inline-block';
+    
+    // 3. Refrescar
+    const params = new URLSearchParams(window.location.search);
+    const idBusqueda = params.get('ciu');
+    if (idBusqueda && DDBB_PUESTOS_PILOTO[idBusqueda]) {
+        rellenarFormulario(DDBB_PUESTOS_PILOTO[idBusqueda]);
+    }
+
+    // Scroll al cuarto acordeón
+    items[3].scrollIntoView({ behavior: 'smooth' });
+}
+
+// 1. Disparador del botón
+function guardarVacante() {
+    document.getElementById('custom-confirm').style.display = 'flex';
+}
+
+// 2. Lógica del Modal
+function cerrarConfirm(aceptar) {
+    document.getElementById('custom-confirm').style.display = 'none';
+    if (aceptar) {
+        ejecutarGuardadoReal();
+    }
+}
+
+// 3. Ejecución Real (Corregida para capturar el TIPO correctamente)
+function ejecutarGuardadoReal() {
+    const params = new URLSearchParams(window.location.search);
+    const idBusqueda = params.get('ciu');
+    const bdPuestos = (window.MAESTRAS && window.MAESTRAS.DDBB_PUESTOS_PILOTO) 
+                      ? window.MAESTRAS.DDBB_PUESTOS_PILOTO 
+                      : (window.DDBB_PUESTOS_PILOTO || null);
+
+    if (!bdPuestos || !bdPuestos[idBusqueda]) return;
+
+    // --- FUNCIÓN DE CAPTURA MEJORADA ---
+    const capturarPorTitulo = (contenedorId, tituloBuscado, esGuion = false) => {
+        const contenedor = document.getElementById(contenedorId);
+        if (!contenedor) return "";
+
+        // Localizamos el encabezado azul que contiene el texto del título
+        const headers = Array.from(contenedor.querySelectorAll('.label-grupo-destacado'));
+        const headerObjetivo = headers.find(h => h.textContent.includes(tituloBuscado));
+        
+        if (!headerObjetivo) return "";
+
+        // El contenedor de los datos es el siguiente hermano (grupo-campos-container)
+        const grupoDiv = headerObjetivo.nextElementSibling;
+        if (!grupoDiv) return "";
+
+        let resultados = [];
+        const filas = grupoDiv.querySelectorAll('.info-row');
+        
+        filas.forEach(fila => {
+            const inputCod = fila.querySelector('input[type="text"], select');
+            const inputTipo = fila.querySelector('.input-tipo');
+
+            if (inputCod && inputCod.value.trim() && inputCod.value !== "---") {
+                let cod = inputCod.value.trim().toUpperCase();
+                let tipoRaw = inputTipo ? inputTipo.value : "";
+                
+                let letra = "";
+                if (tipoRaw.includes("Exigible") || tipoRaw === "E") letra = "E";
+                else if (tipoRaw.includes("Preferente") || tipoRaw === "F") letra = "F";
+                else if (tipoRaw.includes("Indiferente") || tipoRaw === "I") letra = "I";
+                else if (tipoRaw.includes("Anotación") || tipoRaw === "1") letra = "1";
+
+                resultados.push(letra ? `${cod}(${letra})` : cod);
+            }
+        });
+        return resultados.join(esGuion ? '-' : ' ');
+    };
+
+    const d = bdPuestos[idBusqueda];
+
+    // --- GUARDADO DISCRIMINADO POR SUB-GRUPO ---
+    
+    // Acordeón 2
+    d.empleo = capturarPorTitulo('contenedor-empleos-config', 'EMPLEO', true);
+    d.cuerpo = capturarPorTitulo('contenedor-empleos-config', 'CUERPO', true);
+    d.escala = capturarPorTitulo('contenedor-empleos-config', 'ESCALA', true);
+    
+    // Acordeón 3
+    d.tit_dipl = capturarPorTitulo('group-conocimientos', 'TITULACIÓN', false);
+    d.apt = capturarPorTitulo('group-conocimientos', 'APTITUD', false);
+    d.EC = capturarPorTitulo('group-conocimientos', 'ECOM', false);
+    d.esp_fun = capturarPorTitulo('group-conocimientos', 'ESP. FUNDAMENTAL', false);
+    d.idioma = capturarPorTitulo('group-conocimientos', 'IDIOMA (SLP)', false);
+    d.carnet = capturarPorTitulo('group-conocimientos', 'CARNET CONDUCIR', false);
+
+    // Acordeón 4
+    d.competencias_preferentes = capturarPorTitulo('group-expertis', 'COMPETENCIAS', true);
+    d.areas_experiencia = capturarPorTitulo('group-expertis', 'ÁREAS DE EXPERIENCIA', true);
+
+    console.log("Datos guardados con éxito:", d);
+ //   alert("Cambios procesados correctamente.");
+
+    modoEdicion = false;
+    rellenarFormulario(d);
+    document.getElementById('btn-editar').style.display = 'inline-block';
+    document.getElementById('btn-guardar').style.display = 'none';
+}
+
+function desglosarConEdicion(cadena, contenedor, maestra, tituloGrupo) {
+    // 1. Crear el encabezado del grupo
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'label-grupo-destacado';
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+
+    let btnAdd = modoEdicion ? 
+        `<button class="btn-add" type="button" onclick="agregarFilaManual(this, '${tituloGrupo}')">
+            <i class="fas fa-plus"></i> AÑADIR
+         </button>` : '';
+
+    headerDiv.innerHTML = `<span><i class="fas fa-tag"></i> ${tituloGrupo}</span> ${btnAdd}`;
+    contenedor.appendChild(headerDiv);
+
+    const grupoDiv = document.createElement('div');
+    grupoDiv.className = 'grupo-campos-container';
+    contenedor.appendChild(grupoDiv);
+
+    // 2. Control de cadena vacía o nula
+    if (!cadena || cadena === "---" || cadena === "null") return;
+
+    // --- CORRECCIÓN PUNTO 4: Lógica de Separador Robusta ---
+    const camposGuion = ['EMPLEO', 'ESCALA', 'CUERPO', 'COMPETENCIAS', 'ÁREAS DE EXPERIENCIA'];
+    let separador = camposGuion.includes(tituloGrupo) ? '-' : /\s+/; 
+    const entradas = cadena.trim().split(separador);
+
+    entradas.forEach(entrada => {
+        let entradaLimpia = entrada.trim();
+        if (!entradaLimpia) return;
+
+        // 3. Extraer Código y Tipo: "EMFAS(E)" -> cod: EMFAS, tipo: E
+        let tipoMatch = entradaLimpia.match(/\(([^)]+)\)/); 
+        let letraTipo = tipoMatch ? tipoMatch[1].toUpperCase() : "F"; 
+        let codBusqueda = entradaLimpia.replace(/\([^)]+\)/, "").trim();
+
+        // 4. Buscar descripción en la maestra
+        let desc = "No encontrada en catálogo";
+        if (maestra) {
+            let item = maestra.find(m => String(m.cod).trim() === codBusqueda);
+            if (item) desc = item.desc;
+        }
+
+        const fila = document.createElement('div');
+        fila.className = 'info-row';
+        
+        // 5. Renderizado del campo TIPO (Select si editamos, Input si no)
+        let htmlTipo = "";
+        if (modoEdicion) {
+            htmlTipo = `
+                <select class="input-tipo input-edit" style="width:100%;">
+                    <option value="E" ${letraTipo==='E'?'selected':''}>Exigible</option>
+                    <option value="F" ${letraTipo==='F'?'selected':''}>Preferente</option>
+                    <option value="I" ${letraTipo==='I'?'selected':''}>Indiferente</option>
+                    <option value="1" ${letraTipo==='1'?'selected':''}>Anotación</option>
+                </select>`;
+        } else {
+            const textos = {'E':'Exigible','F':'Preferente','I':'Indiferente','1':'Con Anotación'};
+            htmlTipo = `<input type="text" value="${textos[letraTipo] || '---'}" class="input-readonly" readonly style="width:100%;">`;
+        }
+
+        fila.innerHTML = `
+            <div class="info-box" style="flex: 1;">
+                <label>CÓDIGO</label>
+                <input type="text" value="${codBusqueda}" class="input-readonly" readonly style="width:100%;">
+            </div>
+            <div class="info-box" style="flex: 2.5;">
+                <label>DESCRIPCIÓN</label>
+                <input type="text" value="${desc}" class="input-readonly" readonly style="width:100%; background:#f9f9f9;">
+            </div>
+            <div class="info-box" style="flex: 1.2;">
+                <label>TIPO</label>
+                ${htmlTipo}
+            </div>
+            ${modoEdicion ? // Ejemplo de cómo debe quedar el final de la fila en tu JS
+				`<div class="delete-container">
+					<button class="btn-delete" type="button" onclick="this.closest('.info-row').remove()">
+						<i class="fas fa-trash-alt"></i>
+					</button>
+				</div>` : ''}
+        `;
+        grupoDiv.appendChild(fila);
+    });
+}
+
+function agregarFilaManual(boton, tituloGrupo) {
+    // 1. Localizar el contenedor de filas (el div que sigue al header azul)
+    const grupoDiv = boton.closest('.label-grupo-destacado').nextElementSibling;
+    
+    // 2. Obtener códigos ya presentes (buscamos en todos los inputs del grupo actual)
+    const codigosExistentes = Array.from(grupoDiv.querySelectorAll('input, select'))
+        .map(el => el.value.trim().toUpperCase())
+        .filter(val => val !== "" && val !== "---");
+
+    // 3. Obtener la maestra de referencia desde el objeto global
+    const M = window.MAESTRAS || {};
+    const mapaMaestras = {
+        'EMPLEO': M.tEmp, 'ESCALA': M.tEsc, 'CUERPO': M.tCue,
+        'TITULACIÓN': M.tTit, 'APTITUD': M.tApt, 'ECOM': M.tEcom,
+        'ESP. FUNDAMENTAL': M.tEspFun, 'IDIOMA (SLP)': M.tIdio,
+        'CARNET CONDUCIR': M.tCar, 'COMPETENCIAS': M.tComp, 
+        'ÁREAS DE EXPERIENCIA': M.tExp
+    };
+    
+    let maestraReferencia = mapaMaestras[tituloGrupo] || [];
+
+    // 4. FILTRO ANTI-DUPLICADOS: Solo mostramos lo que NO esté ya en la pantalla
+    let opcionesFiltradas = maestraReferencia.filter(item => {
+        const codLimpio = String(item.cod).trim().toUpperCase();
+        return !codigosExistentes.includes(codLimpio);
+    });
+
+    if (opcionesFiltradas.length === 0) {
+        alert(`No hay más registros disponibles en el catálogo para ${tituloGrupo}.`);
+        return;
+    }
+
+    // 5. Construir las opciones del Select
+    let opcionesHTML = opcionesFiltradas.map(item => 
+        `<option value="${item.cod}">${item.cod} - ${item.desc}</option>`
+    ).join('');
+
+    // 6. Crear la nueva fila visualmente diferenciada
+    const nuevaFila = document.createElement('div');
+    nuevaFila.className = 'info-row';
+    // Estilo azul claro para indicar que es una fila nueva pendiente de guardar
+    nuevaFila.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:flex-end; background-color:#F0F9FF; padding:8px; border-radius:4px; border: 1px dashed #BFDBFE;';
+
+    nuevaFila.innerHTML = `
+        <div class="info-box" style="flex: 3.5;">
+            <label>SELECCIONAR ${tituloGrupo}</label>
+            <select class="input-edit" style="width: 100%; height: 28px; border: 1px solid #3B82F6;">
+                <option value="">-- Seleccione un código único --</option>
+                ${opcionesHTML}
+            </select>
+        </div>
+        <div class="info-box" style="flex: 1.2;">
+            <label>TIPO</label>
+            <select class="input-tipo input-edit" style="width: 100%; height: 28px;">
+                <option value="Exigible">Exigible</option>
+                <option value="Preferente" selected>Preferente</option>
+                <option value="Indiferente">Indiferente</option>
+                <option value="Con Anotación">Con Anotación</option>
+            </select>
+        </div>
+        <div class="info-box" style="flex: 0.7;">
+            <label>POND.</label>
+            <input type="number" value="1.0" min="0.0" max="1.5" step="0.1" 
+                   class="input-edit" style="text-align:center; height: 28px;">
+        </div>
+        <div style="padding-bottom: 5px;">
+            <button class="btn-delete" title="Cancelar" 
+                    style="background-color: #FEE2E2; color: #dc3545; width: 28px; height: 28px; border-radius: 4px; border:none; cursor:pointer;"
+                    onclick="this.closest('.info-row').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+    grupoDiv.appendChild(nuevaFila);
+}
+
+function volverABusqueda() {
+    // Opción A: Si queremos simplemente volver atrás en el historial 
+    // (Mantiene filtros y scroll de la página anterior)
+    if (document.referrer.includes("busqueda_vacantes.html")) {
+        window.history.back();
+    } else {
+        // Opción B: Si entra directo, lo mandamos a la búsqueda por defecto
+        window.location.href = "busqueda_vacantes.html";
+    }
+}
+
+
+// 1. Función para cambiar de pestaña (ESTA FALTABA)
+function switchTab(event, tabId) {
+    // Ocultar todos los contenidos
+    document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Desactivar todos los botones
+    document.querySelectorAll('.tab-button').forEach(button => {
+        button.classList.remove('active');
+    });
+
+    // Mostrar el seleccionado y activar su botón
+    document.getElementById(tabId).classList.add('active');
+    event.currentTarget.classList.add('active');
+}
+
+// 2. Función para renderizar los candidatos
+function cargarSolicitantes() {
+    const tbody = document.getElementById('lista-solicitantes-body');
+    if (!tbody || typeof SOLICITANTES_DATA === 'undefined') return;
+
+    tbody.innerHTML = SOLICITANTES_DATA.map(s => `
+        <tr style="cursor:pointer;" onclick="toggleDetalle(${s.id})">
+            <td><b>${s.nombre}</b></td>
+            <td>${s.empleo}</td>
+            <td>${s.cuerpo}</td>
+            <td style="color: #64748b; font-style: italic;">${s.perfil}</td>
+            <td style="text-align: center;">
+                <button class="btn-tool" style="font-size: 12px; padding: 5px;"><i class="fas fa-eye"></i></button>
+            </td>
+        </tr>
+		<tr id="detalle-${s.id}" class="fila-detalle" style="display:none;">
+			<td colspan="5">
+				<div class="detalle-content">
+					<div>
+						<strong style="color:var(--navy); font-size: 15px;">
+							<i class="fas fa-history"></i> ÚLTIMOS DESTINOS
+						</strong>
+						<ul class="lista-destinos">
+							${s.destinos.map(d => `
+								<li>
+									${d.periodo}: <b>${d.unidad}</b>
+								</li>
+							`).join('')}
+						</ul>
+					</div>
+					<div>
+						<p><strong>ECOM:</strong> ${s.ecom.map(e => `<span class="badge badge-ecom">${e}</span>`).join('')}</p>
+						<p><strong>Aptitudes:</strong> ${s.aptitudes.map(a => `<span class="badge badge-apt">${a}</span>`).join('')}</p>
+					</div>
+				</div>
+			</td>
+		</tr>
+    `).join('');
+}
+
+// 3. Función para expandir/colapsar filas
+function toggleDetalle(id) {
+    const fila = document.getElementById(`detalle-${id}`);
+    if (fila) {
+        fila.style.display = (fila.style.display === 'table-row') ? 'none' : 'table-row';
+    }
+}
+
+function mostrarAvisoApp(mensaje) {
+    const aviso = document.getElementById('aviso-estilo');
+    const texto = document.getElementById('aviso-texto');
+    if(aviso && texto) {
+        texto.innerText = mensaje;
+        aviso.style.display = 'block';
+        // Desaparece a los 5 segundos
+        setTimeout(() => { aviso.style.display = 'none'; }, 5000);
+    }
+}
+
+function calcularRanking(btn) {
+    // Validación de seguridad para evitar errores de 'null'
+    if (!btn) btn = document.getElementById('btn-ranking');
+    const contenedor = document.getElementById('contenedor-acciones-ranking');
+    
+    if (!contenedor) return;
+
+    const icono = btn.querySelector('i');
+    const span = btn.querySelector('span');
+
+    // 1. Estado de carga
+    btn.disabled = true;
+    btn.style.opacity = "0.7";
+    if (icono) icono.classList.add('fa-spin');
+    if (span) span.innerText = "PROCESANDO IDONEIDAD...";
+
+    setTimeout(() => {
+        // 2. Insertar los dos botones finales
+        // Nota: El botón del Panel ahora usa window.location.href
+        contenedor.innerHTML = `
+            <div id="aviso-estilo" style="margin-bottom: 20px; padding: 12px; border-radius: 4px; background-color: #f0fdf4; border: 1px solid #bbf7d0; color: #166534; font-weight: bold; display: inline-block; width: 85%;">
+                <i class="fas fa-check-circle" style="color: #166534;"></i> Cálculo finalizado con éxito.
+            </div>
+            
+            <div style="display: flex; justify-content: center; gap: 20px; flex-wrap: wrap;">
+                
+                <button class="btn-tool" onclick="window.open('.\\\\dashboard_candidatos\\\\informe Tecnico IGC.pdf#page=1', '_blank')" 
+                    style="background-color: var(--navy); color: white; padding: 12px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 10px; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+                    <i class="fas fa-file-pdf" style="color: white;"></i> VISUALIZAR IGC
+                </button>
+
+				<button class="btn-tool" onclick="irAPanelEstrategico()" 
+					style="background-color: var(--navy); color: white; padding: 12px 25px; border-radius: 6px; border: none; cursor: pointer; font-weight: bold; display: inline-flex; align-items: center; gap: 10px; font-size: 13px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+					<i class="fas fa-chart-pie" style="color: white;"></i> PANEL ESTRATÉGICO DE IDONEIDAD
+				</button>
+
+            </div>
+        `;
+    }, 1800);
+}
+
+function irAPanelEstrategico() {
+    const ciuActual = document.getElementById('agg-ciu')?.value;
+    
+    if (ciuActual) {
+        sessionStorage.setItem('ciu_retorno', ciuActual);
+        sessionStorage.setItem('urlRegresoVacantes', window.location.href);
+        window.location.href = '.\\dashboard_candidatos\\IGC_Ranking.html';
+    } else {
+        alert("No se puede acceder al panel sin un CIU válido.");
+    }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ciuGuardado = sessionStorage.getItem('ciu_retorno');
+
+    // Si detectamos que volvemos (tab=2) y tenemos un CIU en memoria
+    if (urlParams.get('tab') === '2' && ciuGuardado) {
+        const inputCiu = document.getElementById('agg-ciu');
+        if (inputCiu) {
+            inputCiu.value = ciuGuardado;
+            
+            // Forzamos el evento 'change' o 'input' por si el catálogo 
+            // depende de esos eventos para validar el CIU
+            inputCiu.dispatchEvent(new Event('change'));
+        }
+
+        // Activamos la pestaña de candidatos
+        const btnSolicitantes = document.querySelector('[onclick*="datos-solicitantes"]');
+        if (btnSolicitantes) btnSolicitantes.click();
+        
+        // Limpiamos la memoria para que no interfiera en futuras búsquedas limpias
+        sessionStorage.removeItem('ciu_retorno');
+    }
+});
+	</script>
+	
+
+	</body>
+</html>

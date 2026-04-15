@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Mantenimiento de Puestos de Trabajo</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+
+html {
+    height: 100%;
+    overflow-y: auto; /* Permite scroll vertical */
+    overflow-x: hidden;
+}
+
+body { 
+    font-family: 'Segoe UI', sans-serif; 
+    margin: 0;
+    padding: 20px;
+    padding-bottom: 150px; /* Espacio extra para que no corte el final */
+    background-color: var(--bg-light); 
+    color: #333; 
+    font-size: 13px;
+    min-height: 100%;
+    display: block; /* Asegura que el contenido fluya hacia abajo */
+}
+
+/* Forzar que los acordeones dejen crecer al contenedor */
+.accordion-item.active .accordion-content {
+    display: block;
+    height: auto !important;
+    overflow: visible !important;
+}
+
+	
+/* Espacio extra al final para que el último acordeón no quede pegado al borde */
+body {
+    padding-bottom: 100px !important;
+}
+        :root { 
+            --navy: #003366; --navy-light: #004a8d; --bg-light: #f1f5f9; --border: #cbd5e1; --soft-red: #f87171; --amber: #f59e0b;
+        }
+        
+        .accordion-item { border: 1px solid #ddd; margin-bottom: 5px; border-radius: 4px; overflow: hidden; background: white; }
+        .accordion-header { background-color: var(--navy-light); color: white; padding: 10px 15px; cursor: pointer; display: flex; align-items: center; font-size: 13px; font-weight: bold; }
+        .accordion-header i.chevron { margin-right: 10px; transition: transform 0.3s; font-size: 10px; }
+        .accordion-item.active .accordion-header i.chevron { transform: rotate(90deg); }
+        .accordion-content { display: none; padding: 15px; background: white; }
+        .accordion-item.active .accordion-content { display: block; }
+
+        .rel-table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
+        .rel-table th { background: #f8fafc; text-align: left; padding: 8px; border-bottom: 2px solid var(--border); color: var(--navy); font-size: 11px; text-transform: uppercase; }
+        .rel-table td { padding: 5px 8px; border-bottom: 1px solid #e2e8f0; }
+        
+        .input-cell { padding: 4px; font-size: 11px; border-radius: 3px; border: 1px solid var(--border); width: 100%; box-sizing: border-box; }
+
+		/* Toolbar de Gestión: Solo iconos y texto Navy */
+		
+/* Toolbar Unificada */
+.main-toolbar {
+    display: flex;
+    align-items: center; /* Alineación vertical al centro */
+    justify-content: space-between; /* Título a la izquierda, botones a la derecha */
+    margin-bottom: 25px;
+    background: white;
+    padding: 15px 20px;
+    border-radius: 4px;
+    border-bottom: 2px solid var(--navy); /* Línea decorativa Navy */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.toolbar-title {
+    color: var(--navy);
+    font-size: 18px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Contenedor de botones a la derecha */
+.toolbar-buttons {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-tool {
+    background: none;
+    border: none;
+    padding: 10px 14px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--navy);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-tool:hover {
+    opacity: 0.7;
+    background: rgba(0, 51, 102, 0.05);
+    border-radius: 4px;
+}
+
+		.btn-tool i {
+			font-size: 22px; 
+			color: #003366;
+		}
+
+		/* Estilo para los botones internos de las tablas también en Navy */
+		.btn-add, {
+			background: none;
+			border: none;
+			color: #003366;
+			font-weight: bold;
+			cursor: pointer;
+			font-size: 12px;
+		}
+		
+		.btn-delete {
+			background-color: transparent; /* Fondo limpio */
+			color: var(--navy);           /* Color corporativo */
+			border: 1px solid var(--navy); /* Borde fino Navy */
+			width: 28px;
+			height: 28px;
+			border-radius: 4px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transition: all 0.2s ease;
+			padding: 0;
+			margin-bottom: 0; /* Asegura alineación con los inputs */
+		}
+
+		.btn-delete:hover {
+			background-color: var(--navy); /* Se rellena al pasar el ratón */
+			color: white;                  /* Icono blanco */
+			transform: scale(1.05);
+		}
+
+		.btn-delete i {
+			font-size: 14px; /* Tamaño del icono de la papelera */
+		}
+
+/* Ajuste del contenedor del botón para alineación vertical perfecta */
+.delete-container {
+    display: flex;
+    align-items: flex-end; /* Alinea el botón con la base de los inputs */
+    padding-bottom: 0px;   /* Ajuste fino según tu padding de info-box */
+    height: 42px;          /* Altura total aproximada (label + input) */
+}
+		
+		/* Iconos un poco más grandes para que luzcan como en la imagen */
+		.btn-tool i {
+			font-size: 20px;
+		}		
+		
+		/* Botón Añadir (Verde estilo habilidades) */
+		.btn-add {
+			background-color: #E2E8F0;
+			color: black;
+			border: none;
+			padding: 5px 12px;
+			border-radius: 20px; /* Estilo píldora */
+			cursor: pointer;
+			font-size: 11px;
+			font-weight: bold;
+			transition: background 0.2s;
+			display: inline-flex;
+			align-items: center;
+			gap: 5px;
+			text-transform: uppercase;
+		}
+
+		.btn-add:hover {
+			background-color: #E2E8F0;
+		}
+
+		/* Ajuste para que el botón añadir no se pegue al texto en los títulos */
+		.section-title {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			padding: 8px 0;
+			border-bottom: 1px solid var(--border);
+			margin-bottom: 10px;
+			color: var(--navy);
+			font-weight: bold;
+		}
+		
+        .input-readonly { background-color: #f8fafc; border: 1px solid #e2e8f0; padding: 6px; border-radius: 4px; font-size: 12px; color: #1e293b; width: 100%; font-weight: 600; }
+        label.info-label { font-size: 9px; font-weight: bold; color: #64748b; text-transform: uppercase; }
+        
+        .obs-row { background-color: #fffbeb; } /* Color especial para filas movidas a obs */
+		.info-container {
+			display: flex;
+			flex-direction: column;
+			gap: 10px;
+			padding: 10px;
+		}
+
+
+/* Ajuste de las cajas de entrada para que sean menos altas */
+/* Unificamos el comportamiento de todos los campos de entrada */
+.info-box input, 
+.info-box select {
+    width: 100%;
+    height: 28px; /* Altura fija para todos */
+    padding: 4px 8px;
+    font-size: 12px;
+    box-sizing: border-box; /* Fundamental para que el padding no sume al alto */
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    display: block;
+    line-height: 1.2;
+}
+
+/* Ajuste específico para el select en modo edición */
+.input-edit {
+    border: 1px solid var(--navy) !important;
+    background-color: white !important;
+}
+
+/* Alineación vertical de los contenedores de las filas */
+.info-row {
+    display: flex;
+    gap: 10px;
+    width: 100%;
+    margin-bottom: 8px;
+    align-items: flex-start; /* Alinea las etiquetas arriba */
+}
+
+/* Ajuste del contenedor de la caja para reducir separación */
+.info-box {
+    margin-bottom: 5px; /* Menos separación entre filas */
+}
+
+/* Ajuste de las etiquetas (labels) para que estén más cerca del input */
+.info-box label {
+    display: block;
+    margin-bottom: 2px;
+    font-weight: bold;
+    color: var(--navy);
+    font-size: 11px; /* Etiquetas un poco más pequeñas */
+}
+
+/* Clase específica para los campos de solo lectura (grisáceos) */
+.input-readonly {
+    background-color: #f8fafc !important; /* Un tono gris muy suave */
+    color: #475569;
+    cursor: default;
+}
+
+}
+
+/* Estilo para el input de ponderación cuando es numérico */
+input[type="number"].input-edit {
+    -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-inner-spin-button, 
+input[type="number"]::-webkit-outer-spin-button { 
+    opacity: 1; /* Mostrar las flechitas para facilitar la ponderación */
+}
+
+.config-item-row {
+    background: #fff;
+    padding: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+.config-item-row:last-child {
+    border-bottom: none;
+}
+
+/* Etiqueta de grupo resaltada en Navy */
+.label-grupo-destacado {
+    background-color: var(--navy); /* #003366 */
+    color: white !important;
+    padding: 6px 12px;
+    border-radius: 4px 4px 0 0;
+    display: table; /* Ajusta el ancho al contenido */
+    font-size: 14px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 15px; /* Espacio entre grupos */
+}
+
+/* Contenedor de grupo */
+.grupo-campos-container {
+    border: 1px solid var(--navy); 
+    padding: 15px;
+    border-radius: 0 4px 4px 4px;
+    margin-bottom: 10px;
+    background-color: #ffffff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Ajuste de etiquetas internas para que resalten */
+.grupo-campos-container label {
+    color: #475569;
+    font-weight: 700;
+}
+    </style>
+</head>
+<body>
+
+
+	<div class="main-toolbar">
+		<div class="toolbar-title">PUESTO DE TRABAJO</div>
+
+		<div class="toolbar-buttons">
+			<button class="btn-tool" onclick="volverABusqueda()">
+				<i class="fas fa-search"></i> Buscar
+			</button>			
+			
+			<button id="btn-editar" class="btn-tool" onclick="editarVacante()">
+				<i class="fas fa-edit"></i> Editar
+			</button>		
+			
+			<button id="btn-guardar" class="btn-tool" onclick="guardarVacante()" style="display: none;">
+				<i class="fas fa-save"></i> Guardar
+			</button>
+
+			<button class="btn-tool" onclick="abrirAyuda()">
+				<i class="fas fa-question-circle"></i> Ayuda
+			</button>
+		</div>
+	</div>
+
+	<div class="accordion-item active">
+		<div class="accordion-header" onclick="toggleAcc(this)">
+			<i class="fas fa-chevron-right chevron"></i> 1. DATOS INFORMATIVOS DE LA VACANTE
+		</div>
+
+		<div class="accordion-content">
+			<div class="info-container">
+				
+				<div class="label-grupo-destacado"><i class="fas fa-sitemap"></i> ORGANIZACIÓN ORGÁNICA</div>
+				<div class="grupo-campos-container">
+					<div class="info-row">
+						<div class="info-box" style="flex: 1;">
+							<label>CIU</label>
+							<input type="text" id="agg-ciu" class="input-readonly" readonly>
+						</div>
+						<div class="info-box" style="flex: 2;">
+							<label>UNOR (Unidad)</label>
+							<input type="text" id="agg-unor" class="input-readonly" readonly>
+						</div>
+					</div>
+					<div class="info-row">
+						<div class="info-box" style="flex: 2;">
+							<label>FUNCIÓN</label>
+							<input type="text" id="agg-funcion" class="input-readonly" readonly>
+						</div>
+						<div class="info-box" style="flex: 1;">
+							<label>LOCALIDAD</label>
+							<input type="text" id="agg-localidad" class="input-readonly" readonly>
+						</div>
+						<div class="info-box" style="flex: 1;">
+							<label>PROVINCIA</label>
+							<input type="text" id="agg-provincia" class="input-readonly" readonly>
+						</div>
+					</div>
+				</div>
+
+				<div class="label-grupo-destacado"><i class="fas fa-medal"></i> ORGANIZACIÓN JERÁRQUICA</div>
+				<div class="grupo-campos-container">
+					<div class="info-row">
+						<div class="info-box"><label>EMPLEO</label><input type="text" id="agg-tEmp" class="input-readonly" readonly></div>
+						<div class="info-box"><label>CUERPO</label><input type="text" id="agg-tCue" class="input-readonly" readonly></div>
+						<div class="info-box"><label>ESCALA</label><input type="text" id="agg-tEsc" class="input-readonly" readonly></div>
+					</div>
+				</div>
+
+				<div class="label-grupo-destacado"><i class="fas fa-graduation-cap"></i> CONOCIMIENTOS Y APTITUDES</div>
+				<div class="grupo-campos-container">
+					<div class="info-row">
+						<div class="info-box"><label>TÍTULO</label><input type="text" id="agg-tTit" class="input-readonly" readonly></div>
+						<div class="info-box"><label>APTITUDES</label><input type="text" id="agg-tApt" class="input-readonly" readonly></div>
+						<div class="info-box"><label>ECOM</label><input type="text" id="agg-tEcom" class="input-readonly" readonly></div>
+					</div>
+					<div class="info-row">
+						<div class="info-box"><label>ESP. FUNDAMENTAL</label><input type="text" id="agg-tEspFun" class="input-readonly" readonly></div>
+						<div class="info-box"><label>IDIOMAS (SLP)</label><input type="text" id="agg-tIdio" class="input-readonly" readonly></div>
+						<div class="info-box"><label>CARNET CONDUCIR</label><input type="text" id="agg-tCar" class="input-readonly" readonly></div>
+					</div>
+				</div>
+
+				<div class="label-grupo-destacado"><i class="fas fa-euro-sign"></i> DATOS ECONÓMICOS</div>
+				<div class="grupo-campos-container">
+					<div class="info-row">
+						<div class="info-box"><label>T4</label><input type="text" id="agg-t4" class="input-readonly" readonly></div>
+						<div class="info-box"><label>T5</label><input type="text" id="agg-t5" class="input-readonly" readonly></div>
+						<div class="info-box"><label>T7</label><input type="text" id="agg-t7" class="input-readonly" readonly></div>
+						<div class="info-box"><label>T8</label><input type="text" id="agg-t8" class="input-readonly" readonly></div>
+						<div class="info-box"><label>T9</label><input type="text" id="agg-t9" class="input-readonly" readonly></div>
+					</div>
+					<div class="info-row">
+						<div class="info-box" style="flex: 1;"><label>CSCE</label><input type="text" id="agg-csce" class="input-readonly" readonly></div>
+						<div class="info-box" style="flex: 1;"><label>CDE</label><input type="text" id="agg-cde" class="input-readonly" readonly></div>
+					</div>
+				</div>
+
+				<div class="label-grupo-destacado"><i class="fas fa-star"></i> COMPETENCIAS</div>
+				<div class="grupo-campos-container">
+					<div class="info-row">
+						<div class="info-box"><label>COMPETENCIAS</label><input type="text" id="agg-tComp" class="input-readonly" readonly></div>
+						<div class="info-box"><label>ÁREAS EXPERIENCIA</label><input type="text" id="agg-tExp" class="input-readonly" readonly></div>
+					</div>
+				</div>
+
+				<div class="label-grupo-destacado"><i class="fas fa-comment-alt"></i> OBSERVACIONES</div>
+				<div class="grupo-campos-container">
+					<div class="info-row">
+						<div class="info-box" style="flex: 1;">
+							<label>OBSERVACIONES (CÓDIGOS)</label>
+							<input type="text" id="agg-obs" class="input-readonly" readonly>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+		
+	<div class="accordion-item">
+		<div class="accordion-header" onclick="toggleAcc(this)">
+			<i class="fas fa-chevron-right chevron"></i> 2. CONFIGURACIÓN DE EMPLEO, ESCALA Y CUERPO
+		</div>
+		<div class="accordion-content" id="contenedor-empleos-config"></div>
+	</div>
+
+    <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 3. CONFIGURACIÓN DE CONOCIMIENTOS Y REQUISITOS</div>
+        <div class="accordion-content">
+            <div id="group-conocimientos"></div>
+            
+
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <div class="accordion-header" onclick="toggleAcc(this)"><i class="fas fa-chevron-right chevron"></i> 4. COMPETENCIAS Y EXPERIENCIA</div>
+        <div class="accordion-content" id="group-expertis"></div>
+    </div>
+
+	<div id="custom-confirm" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; justify-content:center; align-items:center;">
+        <div style="background:white; padding:30px; border-radius:8px; text-align:center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); min-width: 300px;">
+            <h3 style="color:var(--navy); margin-top:0;">¿Confirmar guardado?</h3>
+            <p style="margin-bottom:20px;">Los cambios se aplicarán a la vacante actual.</p>
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button onclick="cerrarConfirm(true)" style="background:var(--navy); color:white; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">SÍ, GUARDAR</button>
+                <button onclick="cerrarConfirm(false)" style="background:#e2e8f0; color:black; border:none; padding:10px 20px; border-radius:4px; cursor:pointer; font-weight:bold;">CANCELAR</button>
+            </div>
+        </div>
+    </div>
+
+	<script src="js/maestras.js"></script>
+	<script src="app.js"></script>
+	<script src="js/provisiones.js"></script>	
+	
+	<script>
+window.onload = function() {
+    const params = new URLSearchParams(window.location.search);
+    const idBusqueda = params.get('ciu');
+
+    // BUSCADOR ULTRA-ROBUSTO
+    let baseDatos = null;
+
+    if (window.MAESTRAS && window.MAESTRAS.DDBB_PUESTOS_PILOTO) {
+        baseDatos = window.MAESTRAS.DDBB_PUESTOS_PILOTO;
+    } else if (window.DDBB_PUESTOS_PILOTO) {
+        baseDatos = window.DDBB_PUESTOS_PILOTO;
+    } else if (typeof DDBB_PUESTOS_PILOTO !== 'undefined') {
+        baseDatos = DDBB_PUESTOS_PILOTO;
+    }
+
+    if (!baseDatos) {
+        console.error("Error: No se encontró la variable de puestos en ninguna ubicación.");
+        alert("Error crítico: La base de datos de puestos no está disponible. Revisa maestras.js");
+        return;
+    }
+
+    const datos = baseDatos[idBusqueda];
+
+    if (datos) {
+        console.log("Éxito: Datos cargados para CIU", idBusqueda);
+        rellenarFormulario(datos);
+    } else {
+        console.warn("Aviso: El CIU " + idBusqueda + " no existe en el catálogo.");
+        alert("No se encontraron datos para el CIU: " + idBusqueda);
+    }
+};
+
+function rellenarFormulario(d) {
+    console.log("Procesando objeto:", d);
+
+    const setVal = (id, val) => {
+        const el = document.getElementById(id);
+        if (el) el.value = val || "";
+    };
+
+    // --- ACORDEÓN 1: DATOS INFORMATIVOS (Sin cambios) ---
+    setVal('agg-ciu', d.codigo_busqueda || d.ciu);
+    setVal('agg-unor', d.unor || d.unidad);
+    setVal('agg-funcion', d.funcion || d.puesto);
+    setVal('agg-localidad', d.localidad);
+    setVal('agg-provincia', d.provincia);
+    
+    const valEmp = d.empleo || d.tEmp || d.emp;
+    const valCue = d.cuerpo || d.tCue || d.cue;
+    const valEsc = d.escala || d.tEsc || d.esc;
+    
+    setVal('agg-tEmp', valEmp);
+    setVal('agg-tCue', valCue);
+    setVal('agg-tEsc', valEsc);
+    setVal('agg-tTit', d.tit_dipl);
+    setVal('agg-tApt', d.apt);
+    setVal('agg-tComp', d.competencias_preferentes);
+    setVal('agg-obs', d.observ);
+
+    const M = window.MAESTRAS || {};
+
+    // --- ACORDEÓN 2: CONFIGURACIÓN EMPLEO (Usa desglosarConEdicion) ---
+    const contAcc2 = document.getElementById('contenedor-empleos-config');
+    if (contAcc2) {
+        contAcc2.innerHTML = "";
+        desglosarConEdicion(valEmp, contAcc2, M.tEmp, 'EMPLEO');
+        desglosarConEdicion(valCue, contAcc2, M.tCue, 'CUERPO');
+        desglosarConEdicion(valEsc, contAcc2, M.tEsc, 'ESCALA');
+    }
+
+    // --- ACORDEÓN 3: CONOCIMIENTOS (Usa desglosarConEdicion) ---
+    const contAcc3 = document.getElementById('group-conocimientos');
+    if (contAcc3) {
+        contAcc3.innerHTML = "";
+        desglosarConEdicion(d.tit_dipl, contAcc3, M.tTit, 'TITULACIÓN');
+        desglosarConEdicion(d.apt, contAcc3, M.tApt, 'APTITUD');
+        desglosarConEdicion(d.EC, contAcc3, M.tEcom, 'ECOM');
+        desglosarConEdicion(d.esp_fun, contAcc3, M.tEspFun, 'ESP. FUNDAMENTAL');
+        desglosarConEdicion(d.idioma, contAcc3, M.tIdio, 'IDIOMA (SLP)');
+        desglosarConEdicion(d.carnet, contAcc3, M.tCar, 'CARNET CONDUCIR');
+        
+        // Para observaciones si quieres que sea editable
+        if (d.observ && d.observ !== "---") {
+            desglosarConEdicion(d.observ, contAcc3, M.tObs, 'OBSERVACIONES');
+        }
+    }
+
+    // --- ACORDEÓN 4: COMPETENCIAS (Usa desglosarConEdicion) ---
+    const contAcc4 = document.getElementById('group-expertis');
+    if (contAcc4) {
+        contAcc4.innerHTML = "";
+        desglosarConEdicion(d.competencias_preferentes, contAcc4, M.tComp, 'COMPETENCIAS');
+        desglosarConEdicion(d.areas_experiencia, contAcc4, M.tExp, 'ÁREAS DE EXPERIENCIA');
+    }
+}
+
+let modoEdicion = false;
+
+function editarVacante() {
+    modoEdicion = true;
+    
+    // 1. Gestionar Acordeones: Cerrar todos y abrir el 4º
+    const items = document.querySelectorAll('.accordion-item');
+    items.forEach((item, index) => {
+        if (index === 3) { // El cuarto (0, 1, 2, 3)
+            item.classList.add('active');
+        } else {
+            item.classList.remove('active');
+        }
+    });
+
+    // 2. Botones
+    document.getElementById('btn-editar').style.display = 'none';
+    document.getElementById('btn-guardar').style.display = 'inline-block';
+    
+    // 3. Refrescar
+    const params = new URLSearchParams(window.location.search);
+    const idBusqueda = params.get('ciu');
+    if (idBusqueda && DDBB_PUESTOS_PILOTO[idBusqueda]) {
+        rellenarFormulario(DDBB_PUESTOS_PILOTO[idBusqueda]);
+    }
+
+    // Scroll al cuarto acordeón
+    items[3].scrollIntoView({ behavior: 'smooth' });
+}
+
+// 1. Disparador del botón
+function guardarVacante() {
+    document.getElementById('custom-confirm').style.display = 'flex';
+}
+
+// 2. Lógica del Modal
+function cerrarConfirm(aceptar) {
+    document.getElementById('custom-confirm').style.display = 'none';
+    if (aceptar) {
+        ejecutarGuardadoReal();
+    }
+}
+
+// 3. Ejecución Real (Corregida para capturar el TIPO correctamente)
+function ejecutarGuardadoReal() {
+    const params = new URLSearchParams(window.location.search);
+    const idBusqueda = params.get('ciu');
+    const bdPuestos = (window.MAESTRAS && window.MAESTRAS.DDBB_PUESTOS_PILOTO) 
+                      ? window.MAESTRAS.DDBB_PUESTOS_PILOTO 
+                      : (window.DDBB_PUESTOS_PILOTO || null);
+
+    if (!bdPuestos || !bdPuestos[idBusqueda]) return;
+
+    // --- FUNCIÓN DE CAPTURA MEJORADA ---
+    const capturarPorTitulo = (contenedorId, tituloBuscado, esGuion = false) => {
+        const contenedor = document.getElementById(contenedorId);
+        if (!contenedor) return "";
+
+        // Localizamos el encabezado azul que contiene el texto del título
+        const headers = Array.from(contenedor.querySelectorAll('.label-grupo-destacado'));
+        const headerObjetivo = headers.find(h => h.textContent.includes(tituloBuscado));
+        
+        if (!headerObjetivo) return "";
+
+        // El contenedor de los datos es el siguiente hermano (grupo-campos-container)
+        const grupoDiv = headerObjetivo.nextElementSibling;
+        if (!grupoDiv) return "";
+
+        let resultados = [];
+        const filas = grupoDiv.querySelectorAll('.info-row');
+        
+        filas.forEach(fila => {
+            const inputCod = fila.querySelector('input[type="text"], select');
+            const inputTipo = fila.querySelector('.input-tipo');
+
+            if (inputCod && inputCod.value.trim() && inputCod.value !== "---") {
+                let cod = inputCod.value.trim().toUpperCase();
+                let tipoRaw = inputTipo ? inputTipo.value : "";
+                
+                let letra = "";
+                if (tipoRaw.includes("Exigible") || tipoRaw === "E") letra = "E";
+                else if (tipoRaw.includes("Preferente") || tipoRaw === "F") letra = "F";
+                else if (tipoRaw.includes("Indiferente") || tipoRaw === "I") letra = "I";
+                else if (tipoRaw.includes("Anotación") || tipoRaw === "1") letra = "1";
+
+                resultados.push(letra ? `${cod}(${letra})` : cod);
+            }
+        });
+        return resultados.join(esGuion ? '-' : ' ');
+    };
+
+    const d = bdPuestos[idBusqueda];
+
+    // --- GUARDADO DISCRIMINADO POR SUB-GRUPO ---
+    
+    // Acordeón 2
+    d.empleo = capturarPorTitulo('contenedor-empleos-config', 'EMPLEO', true);
+    d.cuerpo = capturarPorTitulo('contenedor-empleos-config', 'CUERPO', true);
+    d.escala = capturarPorTitulo('contenedor-empleos-config', 'ESCALA', true);
+    
+    // Acordeón 3
+    d.tit_dipl = capturarPorTitulo('group-conocimientos', 'TITULACIÓN', false);
+    d.apt = capturarPorTitulo('group-conocimientos', 'APTITUD', false);
+    d.EC = capturarPorTitulo('group-conocimientos', 'ECOM', false);
+    d.esp_fun = capturarPorTitulo('group-conocimientos', 'ESP. FUNDAMENTAL', false);
+    d.idioma = capturarPorTitulo('group-conocimientos', 'IDIOMA (SLP)', false);
+    d.carnet = capturarPorTitulo('group-conocimientos', 'CARNET CONDUCIR', false);
+
+    // Acordeón 4
+    d.competencias_preferentes = capturarPorTitulo('group-expertis', 'COMPETENCIAS', true);
+    d.areas_experiencia = capturarPorTitulo('group-expertis', 'ÁREAS DE EXPERIENCIA', true);
+
+    console.log("Datos guardados con éxito:", d);
+ //   alert("Cambios procesados correctamente.");
+
+    modoEdicion = false;
+    rellenarFormulario(d);
+    document.getElementById('btn-editar').style.display = 'inline-block';
+    document.getElementById('btn-guardar').style.display = 'none';
+}
+
+function desglosarConEdicion(cadena, contenedor, maestra, tituloGrupo) {
+    // 1. Crear el encabezado del grupo
+    const headerDiv = document.createElement('div');
+    headerDiv.className = 'label-grupo-destacado';
+    headerDiv.style.display = "flex";
+    headerDiv.style.justifyContent = "space-between";
+    headerDiv.style.alignItems = "center";
+
+    let btnAdd = modoEdicion ? 
+        `<button class="btn-add" type="button" onclick="agregarFilaManual(this, '${tituloGrupo}')">
+            <i class="fas fa-plus"></i> AÑADIR
+         </button>` : '';
+
+    headerDiv.innerHTML = `<span><i class="fas fa-tag"></i> ${tituloGrupo}</span> ${btnAdd}`;
+    contenedor.appendChild(headerDiv);
+
+    const grupoDiv = document.createElement('div');
+    grupoDiv.className = 'grupo-campos-container';
+    contenedor.appendChild(grupoDiv);
+
+    // 2. Control de cadena vacía o nula
+    if (!cadena || cadena === "---" || cadena === "null") return;
+
+    // --- CORRECCIÓN PUNTO 4: Lógica de Separador Robusta ---
+    const camposGuion = ['EMPLEO', 'ESCALA', 'CUERPO', 'COMPETENCIAS', 'ÁREAS DE EXPERIENCIA'];
+    let separador = camposGuion.includes(tituloGrupo) ? '-' : /\s+/; 
+    const entradas = cadena.trim().split(separador);
+
+    entradas.forEach(entrada => {
+        let entradaLimpia = entrada.trim();
+        if (!entradaLimpia) return;
+
+        // 3. Extraer Código y Tipo: "EMFAS(E)" -> cod: EMFAS, tipo: E
+        let tipoMatch = entradaLimpia.match(/\(([^)]+)\)/); 
+        let letraTipo = tipoMatch ? tipoMatch[1].toUpperCase() : "F"; 
+        let codBusqueda = entradaLimpia.replace(/\([^)]+\)/, "").trim();
+
+        // 4. Buscar descripción en la maestra
+        let desc = "No encontrada en catálogo";
+        if (maestra) {
+            let item = maestra.find(m => String(m.cod).trim() === codBusqueda);
+            if (item) desc = item.desc;
+        }
+
+        const fila = document.createElement('div');
+        fila.className = 'info-row';
+        
+        // 5. Renderizado del campo TIPO (Select si editamos, Input si no)
+        let htmlTipo = "";
+        if (modoEdicion) {
+            htmlTipo = `
+                <select class="input-tipo input-edit" style="width:100%;">
+                    <option value="E" ${letraTipo==='E'?'selected':''}>Exigible</option>
+                    <option value="F" ${letraTipo==='F'?'selected':''}>Preferente</option>
+                    <option value="I" ${letraTipo==='I'?'selected':''}>Indiferente</option>
+                    <option value="1" ${letraTipo==='1'?'selected':''}>Anotación</option>
+                </select>`;
+        } else {
+            const textos = {'E':'Exigible','F':'Preferente','I':'Indiferente','1':'Con Anotación'};
+            htmlTipo = `<input type="text" value="${textos[letraTipo] || '---'}" class="input-readonly" readonly style="width:100%;">`;
+        }
+
+        fila.innerHTML = `
+            <div class="info-box" style="flex: 1;">
+                <label>CÓDIGO</label>
+                <input type="text" value="${codBusqueda}" class="input-readonly" readonly style="width:100%;">
+            </div>
+            <div class="info-box" style="flex: 2.5;">
+                <label>DESCRIPCIÓN</label>
+                <input type="text" value="${desc}" class="input-readonly" readonly style="width:100%; background:#f9f9f9;">
+            </div>
+            <div class="info-box" style="flex: 1.2;">
+                <label>TIPO</label>
+                ${htmlTipo}
+            </div>
+            ${modoEdicion ? // Ejemplo de cómo debe quedar el final de la fila en tu JS
+				`<div class="delete-container">
+					<button class="btn-delete" type="button" onclick="this.closest('.info-row').remove()">
+						<i class="fas fa-trash-alt"></i>
+					</button>
+				</div>` : ''}
+        `;
+        grupoDiv.appendChild(fila);
+    });
+}
+
+function agregarFilaManual(boton, tituloGrupo) {
+    // 1. Localizar el contenedor de filas (el div que sigue al header azul)
+    const grupoDiv = boton.closest('.label-grupo-destacado').nextElementSibling;
+    
+    // 2. Obtener códigos ya presentes (buscamos en todos los inputs del grupo actual)
+    const codigosExistentes = Array.from(grupoDiv.querySelectorAll('input, select'))
+        .map(el => el.value.trim().toUpperCase())
+        .filter(val => val !== "" && val !== "---");
+
+    // 3. Obtener la maestra de referencia desde el objeto global
+    const M = window.MAESTRAS || {};
+    const mapaMaestras = {
+        'EMPLEO': M.tEmp, 'ESCALA': M.tEsc, 'CUERPO': M.tCue,
+        'TITULACIÓN': M.tTit, 'APTITUD': M.tApt, 'ECOM': M.tEcom,
+        'ESP. FUNDAMENTAL': M.tEspFun, 'IDIOMA (SLP)': M.tIdio,
+        'CARNET CONDUCIR': M.tCar, 'COMPETENCIAS': M.tComp, 
+        'ÁREAS DE EXPERIENCIA': M.tExp
+    };
+    
+    let maestraReferencia = mapaMaestras[tituloGrupo] || [];
+
+    // 4. FILTRO ANTI-DUPLICADOS: Solo mostramos lo que NO esté ya en la pantalla
+    let opcionesFiltradas = maestraReferencia.filter(item => {
+        const codLimpio = String(item.cod).trim().toUpperCase();
+        return !codigosExistentes.includes(codLimpio);
+    });
+
+    if (opcionesFiltradas.length === 0) {
+        alert(`No hay más registros disponibles en el catálogo para ${tituloGrupo}.`);
+        return;
+    }
+
+    // 5. Construir las opciones del Select
+    let opcionesHTML = opcionesFiltradas.map(item => 
+        `<option value="${item.cod}">${item.cod} - ${item.desc}</option>`
+    ).join('');
+
+    // 6. Crear la nueva fila visualmente diferenciada
+    const nuevaFila = document.createElement('div');
+    nuevaFila.className = 'info-row';
+    // Estilo azul claro para indicar que es una fila nueva pendiente de guardar
+    nuevaFila.style.cssText = 'display:flex; gap:8px; margin-bottom:8px; align-items:flex-end; background-color:#F0F9FF; padding:8px; border-radius:4px; border: 1px dashed #BFDBFE;';
+
+    nuevaFila.innerHTML = `
+        <div class="info-box" style="flex: 3.5;">
+            <label>SELECCIONAR ${tituloGrupo}</label>
+            <select class="input-edit" style="width: 100%; height: 28px; border: 1px solid #3B82F6;">
+                <option value="">-- Seleccione un código único --</option>
+                ${opcionesHTML}
+            </select>
+        </div>
+        <div class="info-box" style="flex: 1.2;">
+            <label>TIPO</label>
+            <select class="input-tipo input-edit" style="width: 100%; height: 28px;">
+                <option value="Exigible">Exigible</option>
+                <option value="Preferente" selected>Preferente</option>
+                <option value="Indiferente">Indiferente</option>
+                <option value="Con Anotación">Con Anotación</option>
+            </select>
+        </div>
+        <div class="info-box" style="flex: 0.7;">
+            <label>POND.</label>
+            <input type="number" value="1.0" min="0.0" max="1.5" step="0.1" 
+                   class="input-edit" style="text-align:center; height: 28px;">
+        </div>
+        <div style="padding-bottom: 5px;">
+            <button class="btn-delete" title="Cancelar" 
+                    style="background-color: #FEE2E2; color: #dc3545; width: 28px; height: 28px; border-radius: 4px; border:none; cursor:pointer;"
+                    onclick="this.closest('.info-row').remove()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+    `;
+
+    grupoDiv.appendChild(nuevaFila);
+}
+
+function volverABusqueda() {
+    // Opción A: Si queremos simplemente volver atrás en el historial 
+    // (Mantiene filtros y scroll de la página anterior)
+    if (document.referrer.includes("busqueda_vacantes.html")) {
+        window.history.back();
+    } else {
+        // Opción B: Si entra directo, lo mandamos a la búsqueda por defecto
+        window.location.href = "busqueda_vacantes.html";
+    }
+}
+	</script>
+	
+
+	</body>
+</html>

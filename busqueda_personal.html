@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Búsqueda de Personal - Armada Española</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+<style>
+    :root {
+        --navy: #003366;
+        --navy-light: #004a8d;
+        --bg-light: #f1f5f9;
+        --border: #cbd5e1;
+    }
+
+    html, body {
+        height: auto;
+        min-height: 100%;
+        overflow-y: hidden;
+        overflow-x: hidden;
+        background-color: var(--bg-light);
+        font-family: 'Segoe UI', sans-serif;
+        margin: 0;
+        padding: 0;
+        color: #333;
+        font-size: 13px;
+    }
+
+    .main-toolbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 20px;
+        background: white;
+        padding: 15px 20px;
+        border-radius: 4px;
+        border-bottom: 2px solid var(--navy);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    }
+
+    .toolbar-title {
+        color: var(--navy);
+        font-size: 18px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .toolbar-buttons { display: flex; gap: 8px; }
+
+	.btn-tool {
+		background: none;
+		border: none;
+		padding: 12px 18px;
+		font-size: 16px;   /* antes 15 */
+		font-weight: 600;
+		color: var(--navy);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+
+    .btn-tool:hover { background: rgba(0, 51, 102, 0.05); }
+    .btn-tool i { font-size: 20px; }
+
+    .accordion-container { margin: 0 20px; }
+    .accordion-item {
+        border: 1px solid #ddd;
+        margin-bottom: 5px;
+        border-radius: 4px;
+        overflow: hidden;
+        background: white;
+    }
+    .accordion-header {
+        background-color: var(--navy-light);
+        color: white;
+    font-size: 14px;
+    padding: 12px 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        font-weight: bold;
+    }
+    .accordion-header i.chevron {
+        margin-right: 10px;
+        transition: transform 0.3s;
+        font-size: 10px;
+    }
+    .accordion-item.active .accordion-header i.chevron { transform: rotate(90deg); }
+    .accordion-content {
+        display: none;
+        padding: 20px;
+        background: white;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 15px;
+    }
+    .accordion-item.active .accordion-content { display: grid; }
+
+    .filter-group { display: flex; flex-direction: column; }
+    .filter-group label {
+        display: block;
+        margin-bottom: 4px;
+        font-weight: bold;
+        color: var(--navy);
+        font-size: 11px;
+        text-transform: uppercase;
+    }
+    .input-text, select {
+        width: 100%;
+    height: 32px;
+    font-size: 13px;
+        padding: 4px 8px;
+        box-sizing: border-box;
+        border: 1px solid var(--border);
+        border-radius: 4px;
+    }
+    .multiselect-box {
+        height: 100px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        background: #f8fafc;
+        padding: 5px;
+        border-radius: 4px;
+    }
+    .option-item { display: flex; align-items: center; padding: 2px 0; font-size: 11px; }
+
+    .results-container {
+        margin: 20px;
+        background-color: white;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        display: none;
+    }
+
+    .results-area .toolbar-title {
+        font-size: 16px;
+        margin-bottom: 15px;
+        color: var(--navy);
+        font-weight: bold;
+    }
+
+    #mainTable {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        margin-top: 10px;
+    }
+
+    #mainTable th {
+        background-color: #f8fafc;
+        color: var(--navy);
+        text-align: left;
+        border-bottom: 2px solid var(--border);
+    font-size: 14px;
+    padding: 14px 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    #mainTable td {
+    font-size: 14px;
+    padding: 14px 12px;
+        border-bottom: 1px solid #e2e8f0;
+        vertical-align: middle;
+        color: #334155;
+    }
+
+    #mainTable tbody tr:hover { background-color: #f1f5f9; }
+    #mainTable th i { margin-left: 8px; font-size: 12px; color: #94a3b8; }
+
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 5px;
+        padding-top: 20px;
+    }
+    .page-btn {
+        padding: 5px 12px;
+        border: 1px solid var(--border);
+        background: white;
+        cursor: pointer;
+        border-radius: 4px;
+        color: var(--navy);
+        font-weight: bold;
+    }
+    .page-btn.active {
+        background: var(--navy);
+        color: white;
+        border-color: var(--navy);
+    }
+    .tag {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 600;
+        background: #e2e8f0;
+        color: var(--navy);
+    }
+</style>
+</head>
+<body>
+<div class="main-toolbar">
+    <div class="toolbar-title">PERSONAL ARMADA</div>
+    <div class="toolbar-buttons">
+        <button class="btn-tool" onclick="ejecutarBusqueda()"><i class="fas fa-search"></i> Buscar</button>
+        <button class="btn-tool" onclick="resetFiltros()"><i class="fas fa-eraser"></i> Limpiar</button>
+        <button class="btn-tool" onclick="location.reload()"><i class="fas fa-sync-alt"></i> Recargar</button>
+        <button class="btn-tool" onclick="abrirAyuda()"><i class="fas fa-question-circle"></i> Ayuda</button>
+    </div>
+</div>
+
+<div id="filtros" class="accordion-container">
+    <div class="accordion-item active">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> IDENTIFICACIÓN</div>
+        <div class="accordion-content">
+            <div class="filter-group"><label>DNI</label><input type="text" id="fDni" class="input-text"></div>
+            <div class="filter-group"><label>Nombre</label><input type="text" id="fNombre" class="input-text"></div>
+            <div class="filter-group"><label>Primer apellido</label><input type="text" id="fApellido1" class="input-text"></div>
+            <div class="filter-group"><label>Segundo apellido</label><input type="text" id="fApellido2" class="input-text"></div>
+            <div class="filter-group"><label>Nº escalafón</label><input type="text" id="fEscalafon" class="input-text"></div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> SITUACIÓN PROFESIONAL</div>
+        <div class="accordion-content">
+            <div class="filter-group"><label>Empleo</label><div class="multiselect-box" id="boxEmp"></div></div>
+            <div class="filter-group"><label>Cuerpo</label><div class="multiselect-box" id="boxCue"></div></div>
+            <div class="filter-group"><label>Escala</label><div class="multiselect-box" id="boxEsc"></div></div>
+            <div class="filter-group"><label>Cargo</label><input type="text" id="fCargo" class="input-text"></div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> DESTINO Y LOCALIZACIÓN</div>
+        <div class="accordion-content">
+            <div class="filter-group"><label>Destino</label><input type="text" id="fDestino" class="input-text"></div>
+            <div class="filter-group"><label>Código unidad</label><input type="text" id="fUnidad" class="input-text"></div>
+            <div class="filter-group"><label>Provincia</label><select id="selProv" onchange="cargarLocs()"><option value="">-- Seleccione Provincia --</option></select></div>
+            <div class="filter-group"><label>Localidad</label><select id="selLoc"><option value="">-- Seleccione Localidad --</option></select></div>
+        </div>
+    </div>
+
+    <div class="accordion-item">
+        <div class="accordion-header" onclick="this.parentElement.classList.toggle('active')"><i class="fas fa-chevron-right chevron"></i> FORMACIÓN Y CAPACIDADES</div>
+        <div class="accordion-content">
+            <div class="filter-group"><label>Idioma</label><div class="multiselect-box" id="boxIdioma"></div></div>
+            <div class="filter-group"><label>Aptitud</label><div class="multiselect-box" id="boxApt"></div></div>
+            <div class="filter-group"><label>Título</label><div class="multiselect-box" id="boxTit"></div></div>
+            <div class="filter-group"><label>ECOM</label><div class="multiselect-box" id="boxEcom"></div></div>
+        </div>
+    </div>
+</div>
+
+<div class="results-container">
+    <div class="results-area">
+        <div class="toolbar-title">RESULTADO PERSONAL</div>
+        <table id="mainTable">
+            <thead>
+                <tr>
+                    <th onclick="ordenar('dni')">DNI <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('persona')">APELLIDOS Y NOMBRE <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('numero_escalafon')">Nº ESCALAFÓN <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('cod_empleo')">EMPLEO <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('cod_cuerpo')">CUERPO <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('destino')">DESTINO <i class="fas fa-sort"></i></th>
+                    <th onclick="ordenar('fecha_ascenso')">F. ASCENSO <i class="fas fa-sort"></i></th>
+                </tr>
+            </thead>
+            <tbody id="resBody"></tbody>
+        </table>
+        <div class="pagination" id="pagDiv"></div>
+    </div>
+</div>
+
+<script>
+const PROVINCIAS = {11:"CADIZ",15:"A CORUÑA",28:"MADRID",30:"MURCIA"};
+const LOCALIDADES = [
+    {id:11001,n:"SAN FERNANDO",p:11},
+    {id:15001,n:"FERROL",p:15},
+    {id:28001,n:"MADRID",p:28},
+    {id:30001,n:"CARTAGENA",p:30}
+];
+
+const MASTER_DATA = [
+    {id:1,dni:"12345678A",nombre:"JUAN",primer_apellido:"PEREZ",segundo_apellido:"MARTIN",persona:"PEREZ MARTIN, JUAN",numero_escalafon:"ESC-0001",cargo:"Jefe de Sección de Operaciones",destino:"CUARTEL GENERAL DE LA FLOTA",codigo_unidad:"62111501",fecha_nacimiento:"1978-05-14",fecha_ascenso:"2022-10-04",codigo_puesto:"",cod_empleo:"CN",cod_escala:"EOF",cod_cuerpo:"CGA",cod_provincia_residencia:28,cod_localidad_residencia:28001,idiomas:["EN"],aptitudes:["SEGINFO"],titulos:["EMFAS"],ecom:["TI"]},
+    {id:2,dni:"23456789B",nombre:"MARIA",primer_apellido:"LOPEZ",segundo_apellido:"SERRANO",persona:"LOPEZ SERRANO, MARIA",numero_escalafon:"ESC-0002",cargo:"Oficial de Operaciones",destino:"FRAGATA ALVARO DE BAZAN (F-101)",codigo_unidad:"62212104",fecha_nacimiento:"1990-03-21",fecha_ascenso:"2024-07-01",codigo_puesto:"",cod_empleo:"CF",cod_escala:"EOF",cod_cuerpo:"CGA",cod_provincia_residencia:15,cod_localidad_residencia:15001,idiomas:["EN","FR"],aptitudes:["OTAN"],titulos:["PRL"],ecom:["TCI"]},
+    {id:3,dni:"34567890C",nombre:"ALBERTO",primer_apellido:"GARCIA",segundo_apellido:"RUIZ",persona:"GARCIA RUIZ, ALBERTO",numero_escalafon:"ESC-0003",cargo:"Jefe SEA",destino:"INTENDENCIA DE SAN FERNANDO",codigo_unidad:"64907130",fecha_nacimiento:"1986-09-09",fecha_ascenso:"2020-07-01",codigo_puesto:"",cod_empleo:"CC",cod_escala:"EOF",cod_cuerpo:"CINA",cod_provincia_residencia:11,cod_localidad_residencia:11001,idiomas:["EN"],aptitudes:["PRL"],titulos:["MBA"],ecom:["LOG"]},
+    {id:4,dni:"45678901D",nombre:"LUCIA",primer_apellido:"FERNANDEZ",segundo_apellido:"ORTEGA",persona:"FERNANDEZ ORTEGA, LUCIA",numero_escalafon:"ESC-0004",cargo:"Oficial de Infantería de Marina",destino:"TEAR BATALLON DE CUARTEL GENERAL",codigo_unidad:"60232901",fecha_nacimiento:"1992-11-30",fecha_ascenso:"2021-07-01",codigo_puesto:"",cod_empleo:"TN",cod_escala:"EOF",cod_cuerpo:"IM",cod_provincia_residencia:11,cod_localidad_residencia:11001,idiomas:["EN"],aptitudes:["PARACA"],titulos:["LID"],ecom:["OPS"]}
+];
+
+let filtrados = [...MASTER_DATA];
+let pag = 1;
+const tam = 6;
+let ordenAsc = true;
+
+function cargarLocs() {
+    const pId = document.getElementById('selProv').value;
+    const s = document.getElementById('selLoc');
+    s.innerHTML = '<option value="">-- Seleccione Localidad --</option>';
+    LOCALIDADES.filter(l => !pId || String(l.p) === String(pId)).forEach(l => {
+        s.innerHTML += `<option value="${l.id}">${l.id} - ${l.n}</option>`;
+    });
+}
+
+function getChecked(containerId) {
+    return Array.from(document.querySelectorAll(`#${containerId} input:checked`)).map(cb => cb.value);
+}
+
+function ejecutarBusqueda() {
+    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
+    document.querySelector('.results-container').style.display = 'block';
+
+    const fDni = document.getElementById('fDni').value.trim().toUpperCase();
+    const fNombre = document.getElementById('fNombre').value.trim().toUpperCase();
+    const fApellido1 = document.getElementById('fApellido1').value.trim().toUpperCase();
+    const fApellido2 = document.getElementById('fApellido2').value.trim().toUpperCase();
+    const fEscalafon = document.getElementById('fEscalafon').value.trim().toUpperCase();
+    const fCargo = document.getElementById('fCargo').value.trim().toUpperCase();
+    const fDestino = document.getElementById('fDestino').value.trim().toUpperCase();
+    const fUnidad = document.getElementById('fUnidad').value.trim().toUpperCase();
+    const selProv = document.getElementById('selProv').value;
+    const selLoc = document.getElementById('selLoc').value;
+
+    const empleosSel = getChecked('boxEmp');
+    const cuerposSel = getChecked('boxCue');
+    const escalasSel = getChecked('boxEsc');
+    const idiomasSel = getChecked('boxIdioma');
+    const aptSel = getChecked('boxApt');
+    const titSel = getChecked('boxTit');
+    const ecomSel = getChecked('boxEcom');
+
+    filtrados = MASTER_DATA.filter(v => {
+        const matchDni = !fDni || v.dni.includes(fDni);
+        const matchNombre = !fNombre || v.nombre.toUpperCase().includes(fNombre);
+        const matchA1 = !fApellido1 || v.primer_apellido.toUpperCase().includes(fApellido1);
+        const matchA2 = !fApellido2 || (v.segundo_apellido || '').toUpperCase().includes(fApellido2);
+        const matchEscalafon = !fEscalafon || (v.numero_escalafon || '').toUpperCase().includes(fEscalafon);
+        const matchCargo = !fCargo || (v.cargo || '').toUpperCase().includes(fCargo);
+        const matchDestino = !fDestino || (v.destino || '').toUpperCase().includes(fDestino);
+        const matchUnidad = !fUnidad || (v.codigo_unidad || '').toUpperCase().includes(fUnidad);
+        const matchProv = !selProv || String(v.cod_provincia_residencia) === String(selProv);
+        const matchLoc = !selLoc || String(v.cod_localidad_residencia) === String(selLoc);
+        const matchEmp = empleosSel.length === 0 || empleosSel.includes(v.cod_empleo);
+        const matchCue = cuerposSel.length === 0 || cuerposSel.includes(v.cod_cuerpo);
+        const matchEsc = escalasSel.length === 0 || escalasSel.includes(v.cod_escala);
+        const matchIdioma = idiomasSel.length === 0 || idiomasSel.some(x => v.idiomas.includes(x));
+        const matchApt = aptSel.length === 0 || aptSel.some(x => v.aptitudes.includes(x));
+        const matchTit = titSel.length === 0 || titSel.some(x => v.titulos.includes(x));
+        const matchEcom = ecomSel.length === 0 || ecomSel.some(x => v.ecom.includes(x));
+        return matchDni && matchNombre && matchA1 && matchA2 && matchEscalafon && matchCargo && matchDestino && matchUnidad &&
+               matchProv && matchLoc && matchEmp && matchCue && matchEsc && matchIdioma && matchApt && matchTit && matchEcom;
+    });
+
+    pag = 1;
+    render();
+    document.querySelector('.results-container').scrollIntoView({ behavior: 'smooth' });
+}
+
+function render() {
+    const ini = (pag - 1) * tam;
+    const res = filtrados.slice(ini, ini + tam);
+
+    document.getElementById('resBody').innerHTML = res.map(v => `
+        <tr onclick="abrirEdicion('${v.id}')" style="cursor:pointer;">
+            <td><b>${v.dni}</b></td>
+            <td>${v.persona}</td>
+            <td>${v.numero_escalafon || ''}</td>
+            <td><span class="tag">${v.cod_empleo}</span></td>
+            <td>${v.cod_cuerpo}</td>
+            <td>${v.destino}</td>
+            <td>${fmtFecha(v.fecha_ascenso)}</td>
+        </tr>
+    `).join('');
+
+    const total = Math.ceil(Math.max(filtrados.length, 1) / tam);
+    let h = '';
+    for (let i = 1; i <= total; i++) {
+        h += `<button class="page-btn ${i===pag?'active':''}" onclick="paginar(${i})">${i}</button>`;
+    }
+    document.getElementById('pagDiv').innerHTML = h;
+}
+
+function abrirEdicion(id) {
+    const urlDestino = `mantenimiento_personal.html?id=${encodeURIComponent(id)}`;
+    try {
+        if (window.parent && window.parent !== window && typeof window.parent.navegarAPersonal === 'function') {
+            window.parent.navegarAPersonal(urlDestino);
+            return;
+        }
+    } catch (e) {
+        console.warn('Acceso al padre bloqueado. Abriendo en la ventana actual.');
+    }
+    window.location.href = urlDestino;
+}
+
+function paginar(p) { pag = p; render(); }
+
+function ordenar(campo) {
+    filtrados.sort((a, b) => {
+        const vA = String(a[campo] || '').toLowerCase();
+        const vB = String(b[campo] || '').toLowerCase();
+        return ordenAsc ? vA.localeCompare(vB) : vB.localeCompare(vA);
+    });
+    ordenAsc = !ordenAsc;
+    render();
+}
+
+function resetFiltros() {
+    document.querySelectorAll('input[type="text"]').forEach(i => i.value = '');
+    document.querySelectorAll('.option-item input[type="checkbox"]').forEach(i => i.checked = false);
+    document.getElementById('selProv').value = '';
+    cargarLocs();
+    document.querySelectorAll('.accordion-item').forEach(item => item.classList.remove('active'));
+    document.querySelector('.results-container').style.display = 'none';
+    document.getElementById('resBody').innerHTML = '';
+    document.getElementById('pagDiv').innerHTML = '';
+    filtrados = [...MASTER_DATA];
+    pag = 1;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function fillMulti(id, obj) {
+    const box = document.getElementById(id);
+    Object.entries(obj).forEach(([cod, desc]) => {
+        box.innerHTML += `<div class="option-item"><input type="checkbox" value="${cod}"><span>${cod} - ${desc}</span></div>`;
+    });
+}
+
+function fmtFecha(v) {
+    if (!v) return '';
+    const [y,m,d] = v.split('-');
+    return `${d}/${m}/${y}`;
+}
+
+function abrirAyuda() {
+    alert('Use los filtros para localizar personal y pulse una fila para abrir la ficha de mantenimiento.');
+}
+
+window.onload = () => {
+    const pS = document.getElementById('selProv');
+    Object.entries(PROVINCIAS).forEach(([id, n]) => pS.innerHTML += `<option value="${id}">${id} - ${n}</option>`);
+
+    fillMulti('boxEmp', {"CN":"Capitán de Navío","CF":"Capitán de Fragata","CC":"Capitán de Corbeta","TN":"Teniente de Navío"});
+    fillMulti('boxCue', {"CGA":"Cuerpo General Armada","CINA":"Cuerpo de Ingenieros","IM":"Infantería de Marina"});
+    fillMulti('boxEsc', {"EOF":"Escala de Oficiales"});
+    fillMulti('boxIdioma', {"EN":"Inglés","FR":"Francés"});
+    fillMulti('boxApt', {"SEGINFO":"Seguridad de la Información","OTAN":"Curso OTAN","PRL":"Prevención Riesgos","PARACA":"Paracaidismo"});
+    fillMulti('boxTit', {"EMFAS":"Estado Mayor FAS","PRL":"Prevención Riesgos","MBA":"Máster Dirección","LID":"Liderazgo"});
+    fillMulti('boxEcom', {"TI":"Tecnologías Información","TCI":"Tácticas y Comunicaciones","LOG":"Logística","OPS":"Operaciones"});
+};
+</script>
+</body>
+</html>

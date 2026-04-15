@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SISTEMA DE GESTIÓN DE PUESTOS - ARMADA</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body onload="init()">
+
+<header>
+  <div class="header-top">
+    <div class="logo-container">
+      <img src="logo1.png" alt="Logo Armada Izquierda" class="header-logo" onerror="this.style.display='none'">
+    </div>
+    <div class="header-title-center">SISTEMA DE GESTIÓN DE PUESTOS DE TRABAJO</div>
+    <div class="logo-container logo-right">
+      <img src="logo2.png" alt="Logo Armada Derecha" class="header-logo" onerror="this.style.display='none'">
+    </div>
+  </div>
+  <div class="user-data">
+    <div id="userLine">Usuario: <b>-</b> | Perfil: <b>-</b></div>
+    <div class="user-actions">
+      <button class="link-btn" onclick="exportJSON()" title="Descarga un JSON con todos los datos">Exportar JSON</button>
+      <button class="link-btn" onclick="importJSON()" title="Carga un JSON exportado anteriormente">Importar JSON</button>
+      <button class="link-btn" onclick="factoryReset()" title="Vuelve a los datos iniciales">Reset</button>
+      <button class="link-btn" onclick="doLogout()" title="Volver al login">Cerrar sesión</button>
+    </div>
+  </div>
+</header>
+
+<div class="wrapper">
+  <nav>
+    <div class="nav-root" style="margin-top:20px;">GESTIÓN OPERATIVA</div>
+    <div class="submenu-item" id="menuPuestos" onclick="showSection('puestos')">Puestos de Trabajo</div>
+
+    <div class="submenu-item" id="menuProvisiones" onclick="toggleSubmenu('subProvisiones')">  ▼ Provisiones de Vacantes</div>
+    <div id="subProvisiones" style="display:none; padding-left: 20px; background: rgba(0,0,0,0.05);">
+      <div class="submenu-item" style="font-size: 0.9em;" onclick="showSection('vacantes')">Vacantes</div>
+      <div class="submenu-item" style="font-size: 0.9em;" onclick="showSection('solicitantes')">Solicitantes</div>
+    </div>
+
+    <div class="submenu-item" id="menuPersonal" onclick="toggleSubmenu('subPersonal')">  ▼ Personal Armada</div>
+    <div id="subPersonal" style="display:none; padding-left: 20px; background: rgba(0,0,0,0.05);">
+      <div class="submenu-item" style="font-size: 0.9em;" onclick="showSection('personal')">Personal</div>
+      <div class="submenu-item" style="font-size: 0.9em;" onclick="showSection('encuesta')">Encuesta Competencia</div>
+    </div>
+
+    <div class="nav-root">MANTENIMIENTO</div>
+    <div class="submenu-item" id="menuImpacto" onclick="showSection('impacto')">Áreas de Impacto</div>
+    <div class="submenu-item" id="menuCompetencias" onclick="showSection('competencias')">Competencias</div>
+    <div class="submenu-item" id="menuExperiencia" onclick="showSection('experiencia')">Áreas de Experiencia</div>
+    <div class="submenu-item" id="menuHabilidades" onclick="showSection('habilidades')">Habilidades</div>
+  </nav>
+
+  <main>
+    <div id="sectionPuestos" class="card-full hidden">
+      <iframe src="busqueda_puestos.html" style="width:100%; height: 800px; border:none;" scrolling="yes"></iframe>
+    </div>
+
+    <div id="sectionEncuesta" class="card-full hidden">
+      <iframe src="encuesta_competencias_entrega/busqueda_encuestas_competencias.html" style="width:100%; height: 800px; border:none;" scrolling="yes"></iframe>
+    </div>
+
+    <div id="sectionPersonal" class="card-full hidden">
+      <iframe id="frame-personal" src="busqueda_personal.html" style="width:100%; height: 800px; border:none;" scrolling="yes"></iframe>
+    </div>
+
+    <div id="sectionImpacto" class="card hidden">
+      <div class="card-header"><h1>Áreas de Impacto</h1></div>
+    </div>
+
+    <div id="sectionCompetencias" class="card hidden">
+      <div class="card-header"><h1>Competencias</h1></div>
+    </div>
+
+    <div id="sectionExperiencia" class="card hidden">
+      <div class="card-header"><h1>Áreas de Experiencia</h1></div>
+    </div>
+
+    <div id="sectionHabilidades" class="card hidden">
+      <div class="card-header"><h1>Habilidades</h1></div>
+    </div>
+
+    <section id="sectionVacantes" class="card-full hidden" style="min-height: 80vh; width: 100%;">
+      <iframe src="busqueda_vacantes.html" style="width:100%; height: 800px; border:none;" scrolling="yes"></iframe>
+    </section>
+  </main>
+</div>
+
+<script src="app.js"></script>
+<script>
+function navegarA(url) {
+  const iframe = document.querySelector('#sectionVacantes iframe');
+  if (iframe) iframe.setAttribute('src', url);
+}
+
+function navegarAPersonal(url) {
+  showSection('personal');
+  const iframe = document.getElementById('frame-personal');
+  if (iframe) iframe.setAttribute('src', url);
+}
+</script>
+</body>
+</html>
