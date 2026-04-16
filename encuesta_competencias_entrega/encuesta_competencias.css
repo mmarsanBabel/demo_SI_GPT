@@ -110,6 +110,45 @@ tr:hover td{background:#f8fbff}
 .tab.active{background:var(--azul-principal);color:#fff}
 .tab-panel{display:none}
 .tab-panel.active{display:block}
+.subtabs{
+  display:inline-flex;
+  gap:0;
+  flex-wrap:nowrap;
+  margin-bottom:14px;
+  border:1px solid #d7e0ea;
+  border-radius:8px;
+  overflow:hidden;
+  background:#f4f7fb;
+}
+.subtab{
+  padding:8px 12px;
+  border-radius:0;
+  background:transparent;
+  color:#4b5563;
+  font-weight:700;
+  cursor:pointer;
+  border:none;
+  font-size:13px;
+  line-height:1.2;
+  box-shadow:none;
+  min-width:140px;
+}
+.subtab + .subtab{border-left:1px solid #d7e0ea}
+.subtab.active{
+  background:var(--azul-apoyo);
+  color:#fff;
+}
+.subtab-panel{display:none}
+.subtab-panel.active{display:block}
+.accordion-group{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.accordion-item{border:1px solid #d7e0ea;border-radius:8px;overflow:hidden;background:#fff;}
+.accordion-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:var(--azul-apoyo);color:#fff;font-weight:800;cursor:pointer;user-select:none;transition:all 0.2s ease;}
+.accordion-header:hover{background:#004080}
+.accordion-header i{font-size:14px;transition:transform 0.3s ease;}
+.accordion-item.open .accordion-header i{transform:rotate(180deg)}
+.accordion-body{max-height:0;overflow:hidden;transition:max-height 0.3s ease;}
+.accordion-item.open .accordion-body{max-height:1000px}
+.accordion-content{padding:18px 16px}
 .footer-note{font-size:14px;color:#64748b;margin-top:16px}
 .help-layout{display:grid;grid-template-columns:320px 1fr;gap:20px}
 .help-nav{display:flex;flex-direction:column;gap:12px}

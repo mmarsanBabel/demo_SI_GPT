@@ -6,6 +6,7 @@
   <title>Detalle de encuesta de competencias</title>
   <link rel="stylesheet" href="encuesta_competencias.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
 </head>
 <body>
   <div class="page-shell">
@@ -62,6 +63,18 @@
       `;
     }
 
+    function ratioPercent(a, b) {
+      const total = (a || 0) + (b || 0);
+      if (!total) return 0;
+      return Math.round(((a || 0) / total) * 100);
+    }
+
+    function colorByPercent(value) {
+      if (value >= 70) return 'badge-green';
+      if (value >= 45) return 'badge-gold';
+      return 'badge-red';
+    }
+
     function auditRows(items) {
       return items.map(i => `
         <tr>
@@ -81,6 +94,92 @@
     const id = getParam('id');
     const encuesta = ENCUESTAS_COMPETENCIAS.find(x => x.idEncuesta === id) || ENCUESTAS_COMPETENCIAS[0];
 
+    function getS41Areas(sourceEncuesta) {
+      const areas = Array.isArray(sourceEncuesta?.seccion1?.areasImpacto) ? sourceEncuesta.seccion1.areasImpacto : [];
+      const selected = [];
+
+      const pushUnique = area => {
+        if (!area) return;
+        if (!selected.some(x => (x.area || '').toLowerCase() === (area.area || '').toLowerCase())) {
+          selected.push(area);
+        }
+      };
+
+      pushUnique(areas.find(a => a.area && a.area.toLowerCase().includes('valor')));
+      pushUnique(areas.find(a => a.area && (a.area.toLowerCase().includes('analisis') || a.area.toLowerCase().includes('análisis') || a.area.toLowerCase().includes('gestion') || a.area.toLowerCase().includes('gestión'))));
+      pushUnique(areas.find(a => a.area && a.area.toLowerCase().includes('tecnic')));
+      pushUnique(areas.find(a => a.area && a.area.toLowerCase().includes('liderazgo')));
+
+      areas.forEach(a => {
+        if (selected.length < 4) pushUnique(a);
+      });
+
+      return selected.slice(0, 4);
+    }
+
+    const s41Areas = getS41Areas(encuesta);
+    const radarLegendColors = ['#2d6a4f', '#0f766e', '#1d4ed8', '#7c3aed'];
+
+    const S41_STRENGTH_MODEL = [
+      {
+        area: 'Actuación con valores',
+        areaLabel: 'Actuación con valores. Carácter profesional',
+        position: 'top',
+        strengths: ['Integridad y ejemplaridad', 'Compromiso con la misión']
+      },
+      {
+        area: 'Liderazgo y mando',
+        areaLabel: 'Liderazgo y mando',
+        position: 'right',
+        strengths: ['Liderazgo de equipos', 'Capacidad de decisión', 'Mentoría', 'Humanidad', 'Comunicación']
+      },
+      {
+        area: 'Capacidades de análisis y gestión',
+        areaLabel: 'Capacidades de análisis y gestión',
+        position: 'bottom',
+        strengths: ['Visión estratégica', 'Iniciativa y creatividad', 'Organización y coordinación', 'Planificación de objetivos']
+      },
+      {
+        area: 'Capacidades técnicas',
+        areaLabel: 'Capacidades técnicas',
+        position: 'left',
+        strengths: ['Conocimiento experto', 'Rigor en la ejecución']
+      }
+    ];
+
+    function getAreaBaseValues(sourceEncuesta) {
+      const result = {
+        'Actuación con valores': 1.0,
+        'Capacidades de análisis y gestión': 1.0,
+        'Liderazgo y mando': 1.0,
+        'Capacidades técnicas': 1.0
+      };
+
+      const areas = Array.isArray(sourceEncuesta?.seccion1?.areasImpacto) ? sourceEncuesta.seccion1.areasImpacto : [];
+      areas.forEach(item => {
+        const name = (item.area || '').toLowerCase();
+        const val = item.valorNumerico || 1.0;
+        if (name.includes('valor')) result['Actuación con valores'] = val;
+        if (name.includes('analisis') || name.includes('análisis') || name.includes('gestion') || name.includes('gestión')) result['Capacidades de análisis y gestión'] = val;
+        if (name.includes('liderazgo')) result['Liderazgo y mando'] = val;
+        if (name.includes('tecnic')) result['Capacidades técnicas'] = val;
+      });
+
+      return result;
+    }
+
+    function s41StrengthTag(strength, enc) {
+      const fortalezas = Array.isArray(enc && enc.seccion1 && enc.seccion1.fortalezas ? enc.seccion1.fortalezas : []) ? (enc.seccion1.fortalezas || []) : [];
+      const words = (strength || '').toLowerCase().split(/\s+/).filter(w => w.length > 4);
+      const isFortaleza = words.length > 0 && fortalezas.some(f =>
+        words.some(w => (f.descripcion || '').toLowerCase().includes(w))
+      );
+      const base = 'padding:5px 10px;border-radius:5px;font-size:12px;display:inline-block;line-height:1.5;';
+      return '<span style="' + base + (isFortaleza
+        ? 'background:#1d4ed8;color:#fff;font-weight:600;'
+        : 'background:#f1f5f9;border:1px solid #c7d3e0;color:#334155;') + '">' + strength + '</span>';
+    }
+
     document.getElementById('tituloEncuesta').textContent = `Encuesta ${encuesta.idEncuesta}`;
     document.getElementById('subtituloEncuesta').innerHTML =
       `${pill(encuesta.estadoEncuesta, encuesta.estadoEncuesta === 'VALIDADA' ? 'badge-green' : encuesta.estadoEncuesta === 'EN_CURSO' ? 'badge-gold' : 'badge-blue')}
@@ -96,6 +195,7 @@
         <button class="tab" data-tab="tabS1">Sección 1</button>
         <button class="tab" data-tab="tabS2">Sección 2</button>
         <button class="tab" data-tab="tabS3">Sección 3</button>
+        <button class="tab" data-tab="tabS4">Sección 4</button>
         <button class="tab" data-tab="tabAudit">Auditoría</button>
       </div>
 
@@ -253,6 +353,287 @@
         </div>
       </div>
 
+      <div id="tabS4" class="tab-panel">
+        <div class="subtabs">
+          <button class="subtab active" data-subtab="tabS4Parte1">Primera parte</button>
+          <button class="subtab" data-subtab="tabS4Parte2">Segunda parte</button>
+        </div>
+
+        <div id="tabS4Parte1" class="subtab-panel active">
+          <div class="subcard">
+            <h3 class="section-title">Primera parte - Analisis estadistico del talento</h3>
+            <p style="font-size:14px;color:#64748b;margin-bottom:20px;">Esta parte es generada de forma automática por la aplicación informática en base a los datos del individuo registrados en la misma. A lo largo del informe se incluyen espacios para anotaciones y aclaraciones voluntarias del personal de la Sección de Análisis del Talento.</p>
+
+            <div class="accordion-group">
+              <!-- Sección 4.1 -->
+              <div class="accordion-item open">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                  <span><strong>Sección 1</strong> – Resumen estadístico de fortalezas y debilidades competenciales</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="accordion-body">
+                  <div class="accordion-content">
+                    <p style="font-size:14px;color:#64748b;margin-bottom:20px;">En esta sección se identifican de forma estadística (en base a resultados de los Informes de Competencias) las fortalezas y áreas de desarrollo competenciales del individuo.</p>
+                    
+                    <!-- Gráfico Radar de Competencias -->
+                    <div style="background:#f4f7fb;border:1px solid #dde5ee;border-radius:8px;padding:20px 16px;margin-bottom:24px;">
+                      <!-- Leyenda -->
+                      <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:16px;">
+                        <span style="font-size:12px;color:#64748b;">Menor fortaleza</span>
+                        <div style="height:3px;width:72px;background:linear-gradient(to right,#cbd5e1,#1d4ed8);border-radius:2px;"></div>
+                        <span style="font-size:12px;font-weight:700;color:#1d4ed8;">+ Mayor fortaleza</span>
+                      </div>
+                      <!-- Grid 3×3 -->
+                      <div style="display:grid;grid-template-columns:180px minmax(0,1fr) 180px;grid-template-rows:auto auto auto;align-items:center;gap:10px 6px;">
+                        <div></div>
+                        <div style="text-align:center;">
+                          <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:8px;">Actuación con valores. Carácter profesional</div>
+                          <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+                            ${(S41_STRENGTH_MODEL.find(g => g.position === 'top') || {strengths:[]}).strengths.map(s => s41StrengthTag(s, encuesta)).join('')}
+                          </div>
+                        </div>
+                        <div></div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;">
+                          <div style="font-weight:700;font-size:13px;color:#0f172a;text-align:right;margin-bottom:2px;">Capacidades técnicas</div>
+                          ${(S41_STRENGTH_MODEL.find(g => g.position === 'left') || {strengths:[]}).strengths.map(s => '<div>' + s41StrengthTag(s, encuesta) + '</div>').join('')}
+                        </div>
+                        <div style="position:relative;height:280px;">
+                          <canvas id="radarS41Chart"></canvas>
+                        </div>
+                        <div style="display:flex;flex-direction:column;align-items:flex-start;gap:6px;">
+                          <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:2px;">Liderazgo y mando</div>
+                          ${(S41_STRENGTH_MODEL.find(g => g.position === 'right') || {strengths:[]}).strengths.map(s => '<div>' + s41StrengthTag(s, encuesta) + '</div>').join('')}
+                        </div>
+                        <div></div>
+                        <div style="text-align:center;">
+                          <div style="font-weight:700;font-size:13px;color:#0f172a;margin-bottom:8px;">Capacidades de análisis y gestión</div>
+                          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;max-width:320px;margin:0 auto;">
+                            ${(S41_STRENGTH_MODEL.find(g => g.position === 'bottom') || {strengths:[]}).strengths.map(s => s41StrengthTag(s, encuesta)).join('')}
+                          </div>
+                        </div>
+                        <div></div>
+                      </div>
+                    </div>
+
+                    <!-- Espacio de anotaciones para el analista -->
+                    <div style="border:2px solid #f08c00;border-radius:8px;padding:16px;background:#fff9f0;margin-top:24px;">
+                      <p style="font-size:12px;color:#6d4d00;margin:0 0 12px 0;font-weight:bold;">Espacio para anotaciones del personal de la Sección de Análisis del Talento</p>
+                      <textarea id="anotacionesS41" style="width:100%;height:100px;padding:8px;border:1px solid #f08c00;border-radius:4px;font-size:13px;font-family:inherit;resize:vertical;" placeholder="Recomendaciones, análisis adicional o observaciones sobre las fortalezas y áreas de desarrollo identificadas..."></textarea>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección 4.2 -->
+              <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                  <span><strong>Sección 2</strong> – Estadísticas sobre el potencial del individuo</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="accordion-body">
+                  <div class="accordion-content">
+                    <p style="color:#94a3b8;font-size:13px;font-style:italic;">Pendiente de desarrollo. Contenido a definir con el cliente.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección 4.3 -->
+              <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                  <span><strong>Sección 3</strong> – Estadísticas clave de la Encuesta de Colaboradores</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="accordion-body">
+                  <div class="accordion-content">
+                    <p style="color:#94a3b8;font-size:13px;font-style:italic;">Pendiente de desarrollo. Contenido a definir con el cliente.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Sección 4.4 – Resumen de conocimientos y experiencia -->
+              <div class="accordion-item">
+                <div class="accordion-header" onclick="toggleAccordion(this)">
+                  <span><strong>Sección 4</strong> – Resumen de conocimientos y experiencia</span>
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+                <div class="accordion-body">
+                  <div class="accordion-content">
+                    <p style="font-size:14px;color:#64748b;margin-bottom:16px;">En esta sección se exponen la experiencia y los conocimientos del candidato.</p>
+
+                    <!-- Banner demo -->
+                    <div style="background:#c0392b;color:#fff;border-radius:6px;padding:12px 16px;text-align:center;font-size:13px;font-weight:600;margin-bottom:24px;line-height:1.5;">
+                      Esta sección se generará automáticamente de forma digital.<br>La información que aparece en esta versión es un ejemplo.
+                    </div>
+
+                    <!-- Experiencia -->
+                    <div style="margin-bottom:28px;">
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--azul-apoyo);">
+                        <i class="fa-solid fa-briefcase" style="color:var(--azul-apoyo);font-size:15px;"></i>
+                        <h4 style="margin:0;font-size:16px;color:var(--azul-oscuro-gob);font-weight:700;">Experiencia</h4>
+                      </div>
+                      <div class="grid-2" style="gap:14px;">
+                        <!-- Áreas de experiencia (dinámicas del JSON) -->
+                        <div style="background:#fff;border:1px solid #dde5ee;border-radius:8px;overflow:hidden;">
+                          <div style="background:var(--azul-apoyo);padding:8px 14px;">
+                            <span style="color:#fff;font-size:13px;font-weight:600;"><i class="fa-solid fa-map-pin" style="margin-right:6px;"></i>Áreas de experiencia</span>
+                          </div>
+                          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                            ${(function(){
+                              const items = (encuesta.seccion1.fortalezas || []).filter(f => f.tipo === 'Área de experiencia');
+                              const items3 = (encuesta.seccion3.fortalezas || []).filter(f => f.tipo === 'Área de experiencia');
+                              const all = [...items, ...items3].filter((v,i,a) => a.findIndex(x=>x.codigo===v.codigo)===i);
+                              if (!all.length) return '<span style="color:#94a3b8;font-size:13px;">Sin áreas registradas.</span>';
+                              return all.map(f =>
+                                '<div style="display:flex;align-items:flex-start;gap:8px;">'
+                                  + '<i class="fa-solid fa-circle-dot" style="color:var(--azul-apoyo);font-size:10px;margin-top:5px;flex-shrink:0;"></i>'
+                                  + '<div><span style="font-size:13px;font-weight:600;color:#1e293b;">' + (f.descripcion || '') + '</span>'
+                                  + '<p style="margin:2px 0 0 0;font-size:12px;color:#64748b;">' + (f.justificacion || '') + '</p></div>'
+                                + '</div>'
+                              ).join('');
+                            })()}
+                          </div>
+                        </div>
+                        <!-- Experiencia operativa (demo) -->
+                        <div style="background:#fff;border:1px solid #dde5ee;border-radius:8px;overflow:hidden;">
+                          <div style="background:var(--azul-apoyo);padding:8px 14px;">
+                            <span style="color:#fff;font-size:13px;font-weight:600;"><i class="fa-solid fa-ship" style="margin-right:6px;"></i>Experiencia operativa</span>
+                          </div>
+                          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                              <i class="fa-solid fa-circle-dot" style="color:var(--azul-apoyo);font-size:10px;margin-top:5px;flex-shrink:0;"></i>
+                              <span style="font-size:13px;color:#1e293b;">2 SNMG2</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Conocimientos -->
+                    <div>
+                      <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;padding-bottom:8px;border-bottom:2px solid var(--azul-apoyo);">
+                        <i class="fa-solid fa-graduation-cap" style="color:var(--azul-apoyo);font-size:15px;"></i>
+                        <h4 style="margin:0;font-size:16px;color:var(--azul-oscuro-gob);font-weight:700;">Conocimientos</h4>
+                      </div>
+                      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;">
+                        <!-- ECOM -->
+                        <div style="background:#fff;border:1px solid #dde5ee;border-radius:8px;overflow:hidden;">
+                          <div style="background:var(--azul-apoyo);padding:8px 14px;">
+                            <span style="color:#fff;font-size:13px;font-weight:600;">ECOM</span>
+                          </div>
+                          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                              <i class="fa-solid fa-circle-dot" style="color:var(--azul-apoyo);font-size:10px;margin-top:5px;flex-shrink:0;"></i>
+                              <span style="font-size:13px;color:#1e293b;">Hidrografía</span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- E2T / CEMFAS -->
+                        <div style="background:#fff;border:1px solid #dde5ee;border-radius:8px;overflow:hidden;">
+                          <div style="background:var(--azul-apoyo);padding:8px 14px;">
+                            <span style="color:#fff;font-size:13px;font-weight:600;">E2T / CEMFAS</span>
+                          </div>
+                          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                              <i class="fa-solid fa-circle-dot" style="color:var(--azul-apoyo);font-size:10px;margin-top:5px;flex-shrink:0;"></i>
+                              <span style="font-size:13px;color:#1e293b;">CEMFAS</span>
+                            </div>
+                          </div>
+                        </div>
+                        <!-- Otros cursos -->
+                        <div style="background:#fff;border:1px solid #dde5ee;border-radius:8px;overflow:hidden;">
+                          <div style="background:var(--azul-apoyo);padding:8px 14px;">
+                            <span style="color:#fff;font-size:13px;font-weight:600;">Otros cursos</span>
+                          </div>
+                          <div style="padding:14px;display:flex;flex-direction:column;gap:8px;">
+                            <div style="display:flex;align-items:flex-start;gap:8px;">
+                              <i class="fa-solid fa-circle-dot" style="color:var(--azul-apoyo);font-size:10px;margin-top:5px;flex-shrink:0;"></i>
+                              <span style="font-size:13px;color:#1e293b;">Curso de actualización ascenso CC/CTE</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botón guardar Primera parte -->
+            <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+              <button id="btnGuardarParte1" type="button" onclick="guardarParte1()" style="display:inline-flex;align-items:center;gap:8px;background:var(--azul-apoyo);color:#fff;border:none;border-radius:7px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar Primera parte
+              </button>
+            </div>
+            <div id="feedbackParte1" style="margin-top:10px;"></div>
+          </div>
+        </div>
+
+        <div id="tabS4Parte2" class="subtab-panel">
+          <div class="subcard">
+            <h3 class="section-title">Segunda parte - Recomendaciones de la Seccion de Analisis del Talento</h3>
+            <p style="font-size:14px;color:#0f172a;line-height:1.55;margin-bottom:10px;">
+              Esta sección recoge la valoración final del candidato para la asignación del destino, en base a los resultados obtenidos en la Primera Parte.
+              Debe ser completada íntegramente por el personal de la Sección de Análisis del Talento.
+            </p>
+            <p style="color:#dc2626;font-weight:700;margin:0 0 18px 0;">[Todos los campos libres de esta sección marcados con * son de obligatoria cumplimentación]</p>
+
+            <div style="border:2px dashed #1d4ed8;border-radius:10px;background:#eff6ff;padding:18px;">
+              <h4 style="margin:0 0 12px 0;color:#123b7a;font-size:15px;line-height:1.45;font-weight:700;">
+                1.1 Tras analizar el perfil completo del candidato, la Sección de Análisis del Talento confirma que cumple con todos los requerimientos (conocimientos, competencias y experiencia) exigidos en la descripción del destino.
+              </h4>
+
+              <div style="border:1px solid #bfdbfe;border-radius:8px;background:#fff;padding:16px;margin-bottom:14px;">
+                <div style="display:flex;justify-content:center;gap:18px;flex-wrap:wrap;">
+                  <button type="button" data-choice-group="q11" data-choice-value="cumple" style="min-width:180px;height:52px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:#0f172a;">Cumple</button>
+                  <button type="button" data-choice-group="q11" data-choice-value="no_cumple" style="min-width:180px;height:52px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:14px;font-weight:600;color:#0f172a;">No cumple</button>
+                </div>
+              </div>
+
+              <div style="border:1px solid #94a3b8;border-radius:8px;background:#fff;padding:12px;margin-bottom:22px;">
+                <div style="font-size:13px;color:#64748b;font-style:italic;margin-bottom:8px;">En caso de marcar "No cumple", justifique la respuesta *</div>
+                <textarea id="s4p2-q11-just" style="width:100%;min-height:84px;border:1px solid #cbd5e1;border-radius:6px;padding:10px;font-size:13px;resize:vertical;" placeholder="Detalle de la justificación"></textarea>
+              </div>
+
+              <h4 style="margin:0 0 12px 0;color:#123b7a;font-size:15px;line-height:1.45;font-weight:700;">
+                1.2 Considerando los requerimientos preferentes incluidos en la descripción del destino y el perfil del individuo, la Sección de Análisis del Talento considera al candidato:
+              </h4>
+
+              <div style="border:1px solid #bfdbfe;border-radius:8px;background:#fff;padding:16px;margin-bottom:14px;">
+                <div style="display:grid;grid-template-columns:repeat(5,minmax(110px,1fr));gap:10px;">
+                  <button type="button" data-choice-group="q12" data-choice-value="no_apto" style="height:56px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.3;color:#0f172a;padding:6px;font-weight:600;">No apto para la asignación</button>
+                  <button type="button" data-choice-group="q12" data-choice-value="no_recomendado" style="height:56px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.3;color:#0f172a;padding:6px;font-weight:600;">No recomendado para la asignación</button>
+                  <button type="button" data-choice-group="q12" data-choice-value="apto" style="height:56px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.3;color:#0f172a;padding:6px;font-weight:600;">Apto para la asignación</button>
+                  <button type="button" data-choice-group="q12" data-choice-value="recomendado" style="height:56px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.3;color:#0f172a;padding:6px;font-weight:600;">Recomendado para la asignación</button>
+                  <button type="button" data-choice-group="q12" data-choice-value="prioritario" style="height:56px;border:2px solid #94a3b8;background:#f8fafc;border-radius:8px;cursor:pointer;font-size:12px;line-height:1.3;color:#0f172a;padding:6px;font-weight:600;">Prioritario para la asignación</button>
+                </div>
+              </div>
+
+              <div style="border:1px solid #94a3b8;border-radius:8px;background:#fff;padding:12px;">
+                <div style="font-size:13px;color:#0f172a;font-weight:700;margin-bottom:6px;">Justificación de la respuesta por parte de la Sección de Análisis del Talento *</div>
+                <div style="font-size:13px;color:#334155;line-height:1.5;margin-bottom:8px;">
+                  Recomendaciones para justificación:
+                  <ul style="margin:6px 0 8px 18px;padding:0;">
+                    <li>Incluir evidencias de requisitos preferentes cumplidos por el candidato.</li>
+                    <li>Incorporar ejemplos concretos y referencias a fuentes de información utilizadas.</li>
+                    <li>Justificar también los casos de "No apto" y "No recomendado".</li>
+                  </ul>
+                </div>
+                <textarea id="s4p2-q12-just" style="width:100%;min-height:96px;border:1px solid #cbd5e1;border-radius:6px;padding:10px;font-size:13px;resize:vertical;" placeholder="Justificación final..."></textarea>
+              </div>
+            </div>
+
+            <!-- Botón guardar Segunda parte -->
+            <div style="display:flex;justify-content:flex-end;margin-top:20px;">
+              <button id="btnGuardarParte2" type="button" onclick="guardarParte2()" style="display:inline-flex;align-items:center;gap:8px;background:var(--azul-apoyo);color:#fff;border:none;border-radius:7px;padding:10px 22px;font-size:14px;font-weight:600;cursor:pointer;">
+                <i class="fa-solid fa-floppy-disk"></i> Guardar Segunda parte
+              </button>
+            </div>
+            <div id="feedbackParte2" style="margin-top:10px;"></div>
+          </div>
+        </div>
+      </div>
+
       <div id="tabAudit" class="tab-panel">
         <div class="info-strip">
           <i class="fa-solid fa-file-circle-check"></i>
@@ -288,6 +669,253 @@
         document.getElementById(btn.dataset.tab).classList.add('active');
       });
     });
+
+    document.querySelectorAll('.subtab').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.subtab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.subtab-panel').forEach(x => x.classList.remove('active'));
+        btn.classList.add('active');
+        document.getElementById(btn.dataset.subtab).classList.add('active');
+        // Reiniciar gráficos cuando se cambia de subtab
+        setTimeout(renderRadarS41, 100);
+      });
+    });
+
+    // Accordion toggle handler
+    function toggleAccordion(headerElement) {
+      const item = headerElement.parentElement;
+      item.classList.toggle('open');
+      // Si se abre la sección 4.1, renderizar el gráfico
+      if (item.classList.contains('open')) {
+        setTimeout(renderRadarS41, 100);
+      }
+    }
+
+    function getDefaultS4Parte2State() {
+      const p21 = String(encuesta.seccion2.p21.respuesta || '').toLowerCase();
+      const p25 = String(encuesta.seccion2.p25.respuesta || '').toLowerCase();
+      let q12 = 'apto';
+      if (p25.includes('no apto')) q12 = 'no_apto';
+      else if (p25.includes('no recomendado')) q12 = 'no_recomendado';
+      else if (p25.includes('prioritario')) q12 = 'prioritario';
+      else if (p25.includes('recomendado')) q12 = 'recomendado';
+      else if (p25.includes('apto')) q12 = 'apto';
+      return {
+        q11: p21.includes('si') ? 'cumple' : 'no_cumple',
+        q11Just: p21.includes('si') ? '' : (encuesta.seccion2.p21.justificacion || ''),
+        q12,
+        q12Just: encuesta.seccion2.p25.justificacion || ''
+      };
+    }
+
+    function getS4Parte2SessionKey() {
+      return 's4parte2:' + (encuesta.idEncuesta || 'default');
+    }
+
+    function loadS4Parte2State() {
+      const fallback = getDefaultS4Parte2State();
+      try {
+        const raw = sessionStorage.getItem(getS4Parte2SessionKey());
+        if (!raw) return fallback;
+        return { ...fallback, ...JSON.parse(raw) };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function saveS4Parte2State(state) {
+      try {
+        sessionStorage.setItem(getS4Parte2SessionKey(), JSON.stringify(state));
+      } catch {
+        // noop
+      }
+    }
+
+    function paintChoiceButtons(group, selectedValue) {
+      const isNegative = selectedValue === 'no_cumple' || selectedValue === 'no_apto' || selectedValue === 'no_recomendado';
+      document.querySelectorAll('[data-choice-group="' + group + '"]').forEach(btn => {
+        const active = btn.dataset.choiceValue === selectedValue;
+        btn.style.borderColor = active ? (isNegative ? '#dc2626' : '#2563eb') : '#94a3b8';
+        btn.style.background = active ? (isNegative ? '#fee2e2' : '#dbeafe') : '#f8fafc';
+        btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+    }
+
+    function initS4Parte2Interactive() {
+      const q11Just = document.getElementById('s4p2-q11-just');
+      const q12Just = document.getElementById('s4p2-q12-just');
+      if (!q11Just || !q12Just) return;
+
+      let state = loadS4Parte2State();
+
+      q11Just.value = state.q11Just || '';
+      q12Just.value = state.q12Just || '';
+      paintChoiceButtons('q11', state.q11);
+      paintChoiceButtons('q12', state.q12);
+
+      document.querySelectorAll('[data-choice-group="q11"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state = { ...state, q11: btn.dataset.choiceValue };
+          paintChoiceButtons('q11', state.q11);
+          saveS4Parte2State(state);
+        });
+      });
+
+      document.querySelectorAll('[data-choice-group="q12"]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          state = { ...state, q12: btn.dataset.choiceValue };
+          paintChoiceButtons('q12', state.q12);
+          saveS4Parte2State(state);
+        });
+      });
+
+      q11Just.addEventListener('input', () => {
+        state = { ...state, q11Just: q11Just.value };
+        saveS4Parte2State(state);
+      });
+
+      q12Just.addEventListener('input', () => {
+        state = { ...state, q12Just: q12Just.value };
+        saveS4Parte2State(state);
+      });
+    }
+
+    // Renderiza radar de 4 ejes — uno por área de impacto (top/right/bottom/left)
+    function renderRadarS41() {
+      const canvas = document.getElementById('radarS41Chart');
+      if (!canvas) return;
+
+      const areaValues = getAreaBaseValues(encuesta);
+      // Orden horario desde 12h: top → right → bottom → left
+      const radarOrder = [
+        'Actuación con valores',
+        'Liderazgo y mando',
+        'Capacidades de análisis y gestión',
+        'Capacidades técnicas'
+      ];
+
+      // Etiquetas vacías — los labels están en el HTML del grid
+      const labels = radarOrder.map(() => '');
+      const valores = radarOrder.map(k => areaValues[k] || 1.0);
+
+      if (window.radarS41Instance) {
+        window.radarS41Instance.destroy();
+      }
+
+      const ctx = canvas.getContext('2d');
+      window.radarS41Instance = new Chart(ctx, {
+        type: 'radar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Perfil competencial',
+            data: valores,
+            fill: true,
+            backgroundColor: 'rgba(29, 78, 216, 0.12)',
+            borderColor: '#1d4ed8',
+            pointBackgroundColor: '#1d4ed8',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            borderWidth: 2.5
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: { enabled: false }
+          },
+          scales: {
+            r: {
+              beginAtZero: false,
+              min: 0.9,
+              max: 1.25,
+              ticks: { display: false },
+              pointLabels: { display: false },
+              grid: { color: '#dde5ee' },
+              angleLines: { color: '#c7d3e0' }
+            }
+          }
+        }
+      });
+    }
+
+    // Renderizar el gráfico después de un pequeño delay para asegurar que el canvas esté listo
+    setTimeout(renderRadarS41, 200);
+    initS4Parte2Interactive();
+
+    function showFeedback(containerId, isError, msg) {
+      const el = document.getElementById(containerId);
+      if (!el) return;
+      el.innerHTML = '<div style="display:inline-flex;align-items:center;gap:8px;padding:10px 16px;border-radius:7px;font-size:13px;font-weight:600;'
+        + (isError
+            ? 'background:#fee2e2;border:1px solid #fca5a5;color:#991b1b;'
+            : 'background:#dcfce7;border:1px solid #86efac;color:#166534;')
+        + '"><i class="fa-solid ' + (isError ? 'fa-circle-exclamation' : 'fa-circle-check') + '"></i>' + msg + '</div>';
+      setTimeout(() => { el.innerHTML = ''; }, 4000);
+    }
+
+    function guardarParte1() {
+      const textarea = document.getElementById('anotacionesS41');
+      const texto = textarea ? textarea.value.trim() : '';
+      const key = 's4parte1:' + (encuesta.idEncuesta || 'default');
+      try {
+        sessionStorage.setItem(key, JSON.stringify({ anotaciones: texto, savedAt: new Date().toISOString() }));
+        showFeedback('feedbackParte1', false, 'Primera parte guardada correctamente.');
+      } catch {
+        showFeedback('feedbackParte1', true, 'Error al guardar. Inténtalo de nuevo.');
+      }
+    }
+
+    (function loadParte1() {
+      const key = 's4parte1:' + (encuesta.idEncuesta || 'default');
+      try {
+        const raw = sessionStorage.getItem(key);
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        const textarea = document.getElementById('anotacionesS41');
+        if (textarea && data.anotaciones != null) textarea.value = data.anotaciones;
+      } catch { /* noop */ }
+    })();
+
+    function guardarParte2() {
+      const state = loadS4Parte2State();
+      const errors = [];
+
+      if (!state.q11) {
+        errors.push('Debes seleccionar una opción en la pregunta 1.1 (Cumple / No cumple).');
+      } else if (state.q11 === 'no_cumple' && !state.q11Just.trim()) {
+        errors.push('Al marcar "No cumple" en 1.1 es obligatorio incluir una justificación.');
+        const ta = document.getElementById('s4p2-q11-just');
+        if (ta) { ta.style.borderColor = '#dc2626'; ta.focus(); }
+      } else {
+        const ta11 = document.getElementById('s4p2-q11-just');
+        if (ta11) ta11.style.borderColor = '#cbd5e1';
+      }
+
+      if (!state.q12) {
+        errors.push('Debes seleccionar una opción en la pregunta 1.2.');
+      }
+
+      if ((state.q12 === 'no_apto' || state.q12 === 'no_recomendado') && !state.q12Just.trim()) {
+        errors.push('Las opciones "No apto" y "No recomendado" requieren justificación obligatoria.');
+        const ta = document.getElementById('s4p2-q12-just');
+        if (ta) { ta.style.borderColor = '#dc2626'; ta.focus(); }
+      } else {
+        const ta12 = document.getElementById('s4p2-q12-just');
+        if (ta12) ta12.style.borderColor = '#cbd5e1';
+      }
+
+      if (errors.length > 0) {
+        showFeedback('feedbackParte2', true, errors[0]);
+        return;
+      }
+
+      saveS4Parte2State(state);
+      showFeedback('feedbackParte2', false, 'Segunda parte guardada correctamente.');
+    }
   </script>
 </body>
 </html>
